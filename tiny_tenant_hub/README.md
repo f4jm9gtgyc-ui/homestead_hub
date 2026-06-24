@@ -51,3 +51,33 @@ It does not modify your finance tables.
 ## Notes
 
 The current starter app saves to localStorage immediately. Supabase schema and client placeholders are included so the database layer can be connected cleanly after authentication is configured.
+
+[README.md](https://github.com/user-attachments/files/29310835/README.md)
+# Tiny Tenant Update Files
+
+Replace these files in:
+
+`homestead_hub/tiny_tenant_hub/`
+
+## Files to upload
+
+- `index.html`
+- `app.js`
+- `manifest.json`
+- `service-worker.js`
+- `icons/icon-192.png`
+- `icons/icon-512.png`
+
+## Supabase
+
+Run `tiny_tenant_supabase_update.sql` in the Finance Supabase project SQL Editor.
+
+## What was fixed
+
+- Fixed `Identifier 'supabase' has already been declared`
+- Renamed the JavaScript client to `supabaseClient`
+- Added complete Tiny Tenant dashboard logic
+- Added localStorage fallback so the due date saves even if Supabase blocks a request
+- Added real PNG icons so the manifest icon error is fixed
+- Added Supabase table/RLS SQL for the pregnancy tables
+
