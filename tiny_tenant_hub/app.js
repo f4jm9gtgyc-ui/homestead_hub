@@ -89,8 +89,11 @@ function writeLocal(key, value) {
 
 function bindEvents() {
   $("themeToggle")?.addEventListener("click", () => {
-    document.body.classList.toggle("dark");
-    localStorage.setItem(STORAGE_KEYS.theme, document.body.classList.contains("dark") ? "dark" : "light");
+    const current = document.documentElement.getAttribute("data-theme") === "dark" ? "dark" : "light";
+    const next = current === "dark" ? "light" : "dark";
+    document.documentElement.setAttribute("data-theme", next);
+    document.body.classList.toggle("dark", next === "dark");
+    localStorage.setItem(STORAGE_KEYS.theme, next);
   });
 
   $("profileForm")?.addEventListener("submit", async (event) => {
@@ -166,8 +169,13 @@ function bindEvents() {
 }
 
 function applyTheme() {
-  if (localStorage.getItem(STORAGE_KEYS.theme) === "dark") {
+  const savedTheme = localStorage.getItem(STORAGE_KEYS.theme);
+  if (savedTheme === "dark") {
+    document.documentElement.setAttribute("data-theme", "dark");
     document.body.classList.add("dark");
+  } else {
+    document.documentElement.setAttribute("data-theme", "light");
+    document.body.classList.remove("dark");
   }
 }
 
