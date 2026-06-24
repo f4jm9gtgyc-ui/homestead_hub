@@ -1,1 +1,7 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><rect width="512" height="512" rx="112" fill="#8eb8d9"/><circle cx="256" cy="252" r="184" fill="#fff8eb" opacity=".94"/><path d="M134 238 256 130l122 108h-46v130H180V238z" fill="#4f88b8"/><path d="M195 238h122v130H195z" fill="#fff"/><path d="M242 292h48v76h-48z" fill="#4f88b8"/><path d="M218 265c-22-22-58 10 0 46 58-36 22-68 0-46z" fill="#8eb8d9"/><ellipse cx="347" cy="382" rx="34" ry="45" fill="#4f88b8"/><circle cx="320" cy="318" r="14" fill="#4f88b8"/><circle cx="344" cy="303" r="13" fill="#4f88b8"/><circle cx="370" cy="304" r="12" fill="#4f88b8"/><circle cx="393" cy="320" r="11" fill="#4f88b8"/></svg>
+const SUPABASE_URL = "YOUR_SUPABASE_URL";
+const SUPABASE_ANON_KEY = "YOUR_SUPABASE_ANON_KEY";
+
+const supabase = window.supabase.createClient(
+  SUPABASE_URL,
+  SUPABASE_ANON_KEY
+);
