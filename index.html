@@ -3,46 +3,56 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="theme-color" content="#d8e9f7" />
+  <meta name="theme-color" content="#f7f4ef" />
   <title>Homestead Hub</title>
+  <link rel="icon" type="image/png" href="icons/favicon.png" />
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png" />
+  <link rel="manifest" href="manifest.json" />
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
-  <main class="home-shell">
-    <section class="hero-card">
-      <p class="eyebrow">Homestead Hub</p>
-      <h1>Your home dashboards, finally acting like they know each other.</h1>
-      <p>Finance, solar, and Tiny Tenant in one calm place. Revolutionary stuff: links with nicer furniture.</p>
+  <main class="shell">
+    <section class="hero" aria-labelledby="page-title">
+      <div class="brand-row">
+        <img src="icons/icon-192.png" alt="Homestead Hub icon" class="brand-icon" />
+        <span class="eyebrow">Homestead Hub</span>
+      </div>
+      <h1 id="page-title">Your home dashboard command center.</h1>
+      <p class="hero-copy">One clean landing page for the tools that keep the household running, because apparently homes now need operating systems.</p>
     </section>
 
-    <section class="hub-grid" aria-label="Dashboard links">
+    <section class="dashboard-grid" aria-label="Dashboard links">
       <a class="hub-card finance" href="finance_hub/">
-        <span class="hub-icon">💰</span>
-        <div>
-          <h2>Finance Hub</h2>
-          <p>Budget, bills, ledger, and money decisions.</p>
+        <div class="card-top">
+          <span class="card-icon">💰</span>
+          <span class="status">Login</span>
         </div>
-        <span class="arrow">→</span>
+        <h2>Finance Hub</h2>
+        <p>Track budgets, payments, cash flow, and the many creative ways money escapes.</p>
+        <span class="open-link">Open dashboard →</span>
       </a>
 
       <a class="hub-card solar" href="solar_hub/">
-        <span class="hub-icon">☀️</span>
-        <div>
-          <h2>Solar Hub</h2>
-          <p>Solar production, FPL bills, and energy tracking.</p>
+        <div class="card-top">
+          <span class="card-icon">☀️</span>
+          <span class="status">Active</span>
         </div>
-        <span class="arrow">→</span>
+        <h2>Solar Hub</h2>
+        <p>Monitor solar production, utility uploads, and daily energy notes.</p>
+        <span class="open-link">Open dashboard →</span>
       </a>
 
       <a class="hub-card tenant" href="tiny_tenant_hub/">
-        <span class="hub-icon">👶</span>
-        <div>
-          <h2>Tiny Tenant</h2>
-          <p>Pregnancy progress, nursery prep, and baby spending.</p>
+        <div class="card-top">
+          <span class="card-icon">👶</span>
+          <span class="status">Shared</span>
         </div>
-        <span class="arrow">→</span>
+        <h2>Tiny Tenant</h2>
+        <p>Pregnancy progress, nursery prep, and baby budget tracking for move-in day.</p>
+        <span class="open-link">Open dashboard →</span>
       </a>
     </section>
   </main>
+  <script src="app.js"></script>
 </body>
 </html>

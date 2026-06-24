@@ -1,0 +1,14 @@
+{
+  "name": "Homestead Hub",
+  "short_name": "Homestead",
+  "start_url": "/homestead_hub/",
+  "scope": "/homestead_hub/",
+  "display": "standalone",
+  "background_color": "#f7f4ef",
+  "theme_color": "#f7f4ef",
+  "description": "A personal dashboard landing page for home, finance, solar, and family tools.",
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ]
+}

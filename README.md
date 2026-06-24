@@ -1,36 +1,21 @@
-# Homestead Hub + Tiny Tenant v1.0
+# Homestead Hub Landing Page
 
-## What this package changes
+Add these files to the root of `homestead_hub/`.
 
-This package adds/updates only:
+## Replace/add at root
+- index.html
+- styles.css
+- app.js
+- manifest.json
+- service-worker.js
+- icons/icon-192.png
+- icons/icon-512.png
+- icons/apple-touch-icon.png
+- icons/favicon.png
 
-- root `index.html` landing page
-- root `styles.css` for the landing page
-- `tiny_tenant_hub/` rebuilt dashboard files
+## Do not change
+- finance_hub/
+- solar_hub/
+- tiny_tenant_hub/
 
-It does not include, edit, or replace files inside:
-
-- `finance_hub/`
-- `solar_hub/`
-
-## Install steps
-
-1. In GitHub, open your `homestead_hub` repository.
-2. Upload/replace the root `index.html` and root `styles.css`.
-3. Replace the entire `tiny_tenant_hub/` folder with the one in this package.
-4. Run `tiny_tenant_hub/tiny_tenant_v1_schema.sql` in the Finance Supabase project.
-5. Commit and push.
-6. Open `https://f4jm9gtgyc-ui.github.io/homestead_hub/`.
-
-## Important note
-
-Tiny Tenant does not use login. Anyone with the Tiny Tenant link can view and update the shared dashboard. This is intentional based on the current project direction.
-
-## Theme behavior
-
-Tiny Tenant uses the device/browser color setting:
-
-- light device setting = light mode
-- dark device setting = dark mode
-
-There is no toggle button.
+Each dashboard remains independently installable with its own manifest and icon.
