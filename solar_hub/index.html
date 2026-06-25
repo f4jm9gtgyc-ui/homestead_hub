@@ -431,7 +431,7 @@
 
     .manage-grid {
       display: grid;
-      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, .9fr);
+      grid-template-columns: repeat(4, minmax(0, 1fr));
       gap: 14px;
       align-items: start;
     }
@@ -556,7 +556,7 @@
       .grid-3 { grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr) minmax(0, 1fr); gap: 12px; }
       .panel { padding: 16px; min-height: 300px; }
       .chart { height: 218px; }
-      .manage-grid { grid-template-columns: 1fr 1fr 1fr; }
+      .manage-grid { grid-template-columns: 1fr 1fr; }
       .nav-btn { min-width: auto; padding: 11px 15px; }
     }
 
@@ -770,10 +770,89 @@
         <div class="manage-grid">
           <div class="form-card">
             <h3>Upload FPL Bill</h3>
-            <p class="sub">Stores the PDF in  Storage and logs the upload. Parsing comes next, because one monster at a time.</p>
+            <p class="sub">Stores the PDF in Supabase Storage and logs the upload.</p>
             <input id="fplFileInput" type="file" accept="application/pdf,.pdf" />
             <label id="uploadFplBtn" class="primary-btn" for="fplFileInput" role="button" tabindex="0">Choose & Upload FPL Bill</label>
             <div id="uploadStatus" class="status-note">No bill selected.</div>
+          </div>
+
+          <div class="form-card">
+            <h3>FPL Bill Details</h3>
+            <p class="sub">After uploading the PDF, enter the values from the bill so the dashboard can update.</p>
+            <div class="field">
+              <label for="billMonthInput">Billing Month</label>
+              <input id="billMonthInput" type="text" placeholder="May 2026" />
+            </div>
+            <div class="field">
+              <label for="billStartInput">Billing Start</label>
+              <input id="billStartInput" type="date" />
+            </div>
+            <div class="field">
+              <label for="billEndInput">Billing End</label>
+              <input id="billEndInput" type="date" />
+            </div>
+            <div class="field">
+              <label for="billDueInput">Due Date</label>
+              <input id="billDueInput" type="date" />
+            </div>
+            <div class="field">
+              <label for="totalUsageInput">Total Usage kWh</label>
+              <input id="totalUsageInput" type="number" step="0.01" min="0" placeholder="1008" />
+            </div>
+            <div class="field">
+              <label for="homeUsageInput">Home Usage kWh</label>
+              <input id="homeUsageInput" type="number" step="0.01" min="0" placeholder="546" />
+            </div>
+            <div class="field">
+              <label for="evUsageInput">EV Usage kWh</label>
+              <input id="evUsageInput" type="number" step="0.01" min="0" placeholder="462" />
+            </div>
+            <div class="field">
+              <label for="sentGridInput">Sent to Grid kWh</label>
+              <input id="sentGridInput" type="number" step="0.01" min="0" placeholder="848" />
+            </div>
+            <div class="field">
+              <label for="appliedBillInput">Applied to Bill kWh</label>
+              <input id="appliedBillInput" type="number" step="0.01" min="0" placeholder="848" />
+            </div>
+            <div class="field">
+              <label for="reserveAddedInput">Reserve Increased kWh</label>
+              <input id="reserveAddedInput" type="number" step="0.01" placeholder="0" />
+            </div>
+            <div class="field">
+              <label for="reserveBalanceInput">Reserve Balance kWh</label>
+              <input id="reserveBalanceInput" type="number" step="0.01" min="0" placeholder="0" />
+            </div>
+            <div class="field">
+              <label for="baseChargeInput">Base Charge $</label>
+              <input id="baseChargeInput" type="number" step="0.01" min="0" placeholder="10.52" />
+            </div>
+            <div class="field">
+              <label for="electricServiceInput">Electric Service $</label>
+              <input id="electricServiceInput" type="number" step="0.01" min="0" placeholder="97.25" />
+            </div>
+            <div class="field">
+              <label for="evolutionChargeInput">FPL EVolution $</label>
+              <input id="evolutionChargeInput" type="number" step="0.01" min="0" placeholder="18.41" />
+            </div>
+            <div class="field">
+              <label for="grossTaxInput">Gross Receipts Tax $</label>
+              <input id="grossTaxInput" type="number" step="0.01" min="0" placeholder="2.50" />
+            </div>
+            <div class="field">
+              <label for="regFeeInput">Regulatory Fee $</label>
+              <input id="regFeeInput" type="number" step="0.01" min="0" placeholder="0.10" />
+            </div>
+            <div class="field">
+              <label for="newChargesInput">Total New Charges $</label>
+              <input id="newChargesInput" type="number" step="0.01" min="0" placeholder="118.26" />
+            </div>
+            <div class="field">
+              <label for="currentBillInput">Current Bill $</label>
+              <input id="currentBillInput" type="number" step="0.01" min="0" placeholder="85.59" />
+            </div>
+            <button id="saveFplBillBtn" class="primary-btn" type="button">Save FPL Bill Details</button>
+            <div id="billDetailsStatus" class="status-note">Ready to save bill details.</div>
           </div>
 
           <div class="form-card">
@@ -918,13 +997,106 @@
           return;
         }
 
-        status.textContent = `Uploaded: ${file.name}`;
+        status.textContent = `Uploaded: ${file.name}. Now enter the bill details and save them.`;
         input.value = "";
       } catch (error) {
         console.error(error);
         status.textContent = `Upload failed: ${error.message || "Unknown error"}`;
         input.value = "";
       }
+    }
+
+
+    function fieldNumber(id) {
+      const value = document.getElementById(id)?.value;
+      return value === "" || value == null ? 0 : Number(value);
+    }
+
+    function displayDueDateFromInput(value) {
+      if (!value) return null;
+      const [year, month, day] = value.split("-").map(Number);
+      const date = new Date(year, month - 1, day);
+      return date.toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" });
+    }
+
+    function clearFplBillForm() {
+      [
+        "billMonthInput", "billStartInput", "billEndInput", "billDueInput", "totalUsageInput",
+        "homeUsageInput", "evUsageInput", "sentGridInput", "appliedBillInput", "reserveAddedInput",
+        "reserveBalanceInput", "baseChargeInput", "electricServiceInput", "evolutionChargeInput",
+        "grossTaxInput", "regFeeInput", "newChargesInput", "currentBillInput"
+      ].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.value = "";
+      });
+    }
+
+    async function saveFplBillDetails() {
+      const status = document.getElementById("billDetailsStatus");
+      const month = document.getElementById("billMonthInput").value.trim();
+      const billingStart = document.getElementById("billStartInput").value;
+      const billingEnd = document.getElementById("billEndInput").value;
+      const dueDateInput = document.getElementById("billDueInput").value;
+      const currentBill = fieldNumber("currentBillInput");
+
+      if (!month) {
+        status.textContent = "Enter the billing month, like May 2026.";
+        return;
+      }
+
+      if (!billingEnd) {
+        status.textContent = "Enter the billing end date so the dashboard can sort bills correctly.";
+        return;
+      }
+
+      if (!Number.isFinite(currentBill) || currentBill < 0) {
+        status.textContent = "Enter a valid current bill amount.";
+        return;
+      }
+
+      let billingDays = 0;
+      if (billingStart && billingEnd) {
+        const startDate = new Date(`${billingStart}T00:00:00`);
+        const endDate = new Date(`${billingEnd}T00:00:00`);
+        billingDays = Math.max(0, Math.round((endDate - startDate) / 86400000));
+      }
+
+      const payload = {
+        month,
+        billing_start: billingStart || null,
+        billing_end: billingEnd || null,
+        billing_days: billingDays,
+        home_usage_kwh: fieldNumber("homeUsageInput"),
+        ev_usage_kwh: fieldNumber("evUsageInput"),
+        total_usage_kwh: fieldNumber("totalUsageInput"),
+        sent_to_grid_kwh: fieldNumber("sentGridInput"),
+        applied_to_bill_kwh: fieldNumber("appliedBillInput"),
+        reserve_added_kwh: fieldNumber("reserveAddedInput"),
+        reserve_balance_kwh: fieldNumber("reserveBalanceInput"),
+        base_service_fee: fieldNumber("baseChargeInput"),
+        electric_service_amount: fieldNumber("electricServiceInput"),
+        evolution_home_charge: fieldNumber("evolutionChargeInput"),
+        gross_receipts_tax: fieldNumber("grossTaxInput"),
+        regulatory_fee: fieldNumber("regFeeInput"),
+        total_new_charges: fieldNumber("newChargesInput"),
+        total_bill: currentBill,
+        current_bill: currentBill,
+        due_date: displayDueDateFromInput(dueDateInput) || dueDateInput || null
+      };
+
+      status.textContent = "Saving FPL bill details...";
+
+      const { error } = await client.from("fpl_bills").insert(payload);
+
+      if (error) {
+        console.error(error);
+        status.textContent = `Save failed: ${error.message}`;
+        return;
+      }
+
+      status.textContent = `Saved FPL bill details for ${month}.`;
+      clearFplBillForm();
+      await loadSolarHub();
     }
 
     async function saveDailyEntry() {
@@ -1188,6 +1360,7 @@
     document.getElementById("dailyDate").value = todayISO();
     document.getElementById("uploadFplBtn").addEventListener("click", prepareFplBillPicker);
     document.getElementById("uploadFplBtn").addEventListener("keydown", prepareFplBillPicker);
+    document.getElementById("saveFplBillBtn").addEventListener("click", saveFplBillDetails);
     document.getElementById("fplFileInput").addEventListener("change", uploadFplBill);
     document.getElementById("saveDailyBtn").addEventListener("click", saveDailyEntry);
     setupNavActiveState();
