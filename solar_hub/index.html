@@ -496,6 +496,96 @@
       line-height: 1.35;
     }
 
+
+
+    .daily-log-card {
+      grid-column: 1 / -1;
+    }
+
+    .daily-log-header {
+      display: flex;
+      justify-content: space-between;
+      gap: 16px;
+      align-items: end;
+      margin-bottom: 14px;
+      flex-wrap: wrap;
+    }
+
+    .daily-log-controls {
+      display: flex;
+      gap: 12px;
+      align-items: end;
+      flex-wrap: wrap;
+    }
+
+    .daily-log-controls .field {
+      margin-bottom: 0;
+      min-width: 190px;
+    }
+
+    .daily-summary-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 10px;
+      margin: 12px 0 16px;
+    }
+
+    .daily-summary-tile {
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      background: rgba(255,250,242,.65);
+      padding: 13px;
+    }
+
+    .daily-summary-tile span {
+      display: block;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 850;
+      text-transform: uppercase;
+      letter-spacing: .04em;
+      margin-bottom: 5px;
+    }
+
+    .daily-summary-tile strong {
+      font-size: 20px;
+      letter-spacing: -.03em;
+    }
+
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 92px;
+      border-radius: 999px;
+      padding: 5px 10px;
+      font-size: 12px;
+      font-weight: 900;
+      border: 1px solid var(--line);
+      white-space: nowrap;
+    }
+
+    .status-good { color: var(--green); background: rgba(66,104,15,.08); }
+    .status-missing { color: var(--red); background: rgba(155,36,29,.08); }
+    .status-low { color: #9a6400; background: rgba(242,160,0,.12); }
+    .status-high { color: var(--brown); background: rgba(90,54,31,.08); }
+
+    .table-action {
+      border: 1px solid var(--line);
+      background: rgba(255,250,242,.75);
+      color: var(--brown-dark);
+      border-radius: 10px;
+      padding: 7px 10px;
+      font-weight: 850;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+
+    .daily-log-missing td {
+      color: var(--muted);
+      background: rgba(155,36,29,.035);
+    }
+
     .bottom-nav {
       position: fixed;
       left: 0;
@@ -572,6 +662,9 @@
     }
 
     @media (max-width: 560px) {
+      .daily-summary-grid { grid-template-columns: 1fr; }
+      .daily-log-header { align-items: stretch; }
+      .daily-log-controls .field { min-width: 100%; }
       .kpi-grid { grid-template-columns: 1fr; }
       .performance-grid { grid-template-columns: 1fr; }
     }
@@ -881,6 +974,44 @@
             <div class="rowline"><span>Entries This Month</span><strong id="entryCount">--</strong></div>
             <div class="rowline"><span>Latest Entry</span><strong id="latestEntryDate">--</strong></div>
           </div>
+
+          <div class="form-card daily-log-card">
+            <div class="daily-log-header">
+              <div>
+                <h3>Daily Solar Log</h3>
+                <div class="sub">Review Terra Energy daily entries and spot missing or unusual days.</div>
+              </div>
+              <div class="daily-log-controls">
+                <div class="field">
+                  <label for="dailyLogMonth">Month to Review</label>
+                  <input id="dailyLogMonth" type="month" />
+                </div>
+              </div>
+            </div>
+
+            <div class="daily-summary-grid">
+              <div class="daily-summary-tile"><span>Days Entered</span><strong id="logDaysEntered">--</strong></div>
+              <div class="daily-summary-tile"><span>Days Missing</span><strong id="logDaysMissing">--</strong></div>
+              <div class="daily-summary-tile"><span>Month Total</span><strong><span id="logMonthTotal">--</span> kWh</strong></div>
+              <div class="daily-summary-tile"><span>Daily Average</span><strong><span id="logDailyAvg">--</span> kWh</strong></div>
+            </div>
+
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Date</th>
+                    <th class="right">Solar Generated kWh</th>
+                    <th>Notes</th>
+                    <th>Status</th>
+                    <th class="right">Action</th>
+                  </tr>
+                </thead>
+                <tbody id="dailyLogRows"></tbody>
+              </table>
+            </div>
+            <div class="status-note">Tip: use Edit/Add to load that date into the Daily Entry form above.</div>
+          </div>
         </div>
       </article>
     </section>
@@ -900,6 +1031,7 @@
     const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp6aWpvcHNzd3dxbmhtcmpid2doIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE5MDg4MzMsImV4cCI6MjA5NzQ4NDgzM30.xINNWvchRGPr7hlcrSV98u_gsH2HFiQ_wdlXbGQ6MkM";
 
     const client = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    let dailyAllCache = [];
 
     if (window.pdfjsLib) {
       pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
@@ -1318,6 +1450,7 @@
         const sys = (systemRes.data || [])[0] || {};
         const dailyMonth = dailyMonthRes.data || [];
         const dailyAll = dailyAllRes.data || [];
+        dailyAllCache = dailyAll;
 
         const mtd = dailyMonth.reduce((sum, row) => sum + Number(row.solar_generated_kwh || 0), 0);
         const todayRow = dailyMonth.find(row => row.production_date === today);
@@ -1383,6 +1516,7 @@
 
         renderMonthlyTable(monthly, bills, displaySolar, bill);
         renderEnergyChart(buildChartRows(monthly, bills, displaySolar, bill));
+        renderDailySolarLog(dailyAll);
       } catch (error) {
         console.error(error);
         showError("Solar Hub could not load Supabase data. Check table names, RLS policies, and your Supabase URL/key. Technology remains deeply committed to making one missing permission feel like a mystery novel.");
@@ -1504,6 +1638,122 @@
       svg.innerHTML = html;
     }
 
+
+
+    function monthValueFromDate(dateString) {
+      return String(dateString || todayISO()).slice(0, 7);
+    }
+
+    function daysInMonth(year, monthIndexZero) {
+      return new Date(year, monthIndexZero + 1, 0).getDate();
+    }
+
+    function selectedLogMonth() {
+      const input = document.getElementById("dailyLogMonth");
+      return input?.value || monthValueFromDate(todayISO());
+    }
+
+    function renderDailySolarLog(rows = dailyAllCache) {
+      const tbody = document.getElementById("dailyLogRows");
+      if (!tbody) return;
+
+      const monthValue = selectedLogMonth();
+      const [year, month] = monthValue.split("-").map(Number);
+      if (!year || !month) return;
+
+      const today = todayISO();
+      const isCurrentMonth = monthValue === monthValueFromDate(today);
+      const lastDay = isCurrentMonth ? Number(today.slice(8, 10)) : daysInMonth(year, month - 1);
+
+      const entries = (rows || []).filter(row => monthValueFromDate(row.production_date) === monthValue);
+      const entryMap = new Map(entries.map(row => [row.production_date, row]));
+      const total = entries.reduce((sum, row) => sum + Number(row.solar_generated_kwh || 0), 0);
+      const avg = entries.length ? total / entries.length : 0;
+      const missing = Math.max(0, lastDay - entries.length);
+
+      setText("logDaysEntered", entries.length);
+      setText("logDaysMissing", missing);
+      setText("logMonthTotal", number(total));
+      setText("logDailyAvg", number(avg));
+
+      const html = [];
+      for (let day = lastDay; day >= 1; day--) {
+        const date = `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+        const row = entryMap.get(date);
+
+        if (!row) {
+          html.push(`
+            <tr class="daily-log-missing">
+              <td><strong>${date}</strong></td>
+              <td class="right">--</td>
+              <td>Missing Terra entry</td>
+              <td><span class="status-badge status-missing">Missing Day</span></td>
+              <td class="right"><button class="table-action" type="button" data-add-date="${date}">Add</button></td>
+            </tr>
+          `);
+          continue;
+        }
+
+        const kwh = Number(row.solar_generated_kwh || 0);
+        let statusText = "Looks Good";
+        let statusClass = "status-good";
+
+        if (kwh < 10) {
+          statusText = "Low Production";
+          statusClass = "status-low";
+        } else if (kwh > 70) {
+          statusText = "High Production";
+          statusClass = "status-high";
+        }
+
+        html.push(`
+          <tr>
+            <td><strong>${date}</strong></td>
+            <td class="right">${number(kwh)}</td>
+            <td>${row.notes ? escapeHtml(row.notes) : "--"}</td>
+            <td><span class="status-badge ${statusClass}">${statusText}</span></td>
+            <td class="right"><button class="table-action" type="button" data-edit-date="${date}">Edit</button></td>
+          </tr>
+        `);
+      }
+
+      tbody.innerHTML = html.join("");
+      tbody.querySelectorAll("[data-edit-date]").forEach(button => {
+        button.addEventListener("click", () => editDailyLogEntry(button.dataset.editDate));
+      });
+      tbody.querySelectorAll("[data-add-date]").forEach(button => {
+        button.addEventListener("click", () => addDailyLogEntry(button.dataset.addDate));
+      });
+    }
+
+    function addDailyLogEntry(date) {
+      document.getElementById("dailyDate").value = date;
+      document.getElementById("dailyKwh").value = "";
+      document.getElementById("dailyNotes").value = "";
+      document.getElementById("dailyStatus").textContent = `Ready to add Terra entry for ${date}.`;
+      document.getElementById("dailyDate").scrollIntoView({ behavior: "smooth", block: "center" });
+      document.getElementById("dailyKwh").focus();
+    }
+
+    function editDailyLogEntry(date) {
+      const row = dailyAllCache.find(item => item.production_date === date);
+      document.getElementById("dailyDate").value = date;
+      document.getElementById("dailyKwh").value = row ? Number(row.solar_generated_kwh || 0) : "";
+      document.getElementById("dailyNotes").value = row?.notes || "";
+      document.getElementById("dailyStatus").textContent = `Editing Terra entry for ${date}. Save Entry will update this day.`;
+      document.getElementById("dailyDate").scrollIntoView({ behavior: "smooth", block: "center" });
+      document.getElementById("dailyKwh").focus();
+    }
+
+    function escapeHtml(value) {
+      return String(value)
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
+    }
+
     function setupNavActiveState() {
       const links = Array.from(document.querySelectorAll(".nav-btn"));
       links.forEach(link => {
@@ -1515,11 +1765,13 @@
     }
 
     document.getElementById("dailyDate").value = todayISO();
+    document.getElementById("dailyLogMonth").value = monthValueFromDate(todayISO());
     document.getElementById("uploadFplBtn").addEventListener("click", prepareFplBillPicker);
     document.getElementById("uploadFplBtn").addEventListener("keydown", prepareFplBillPicker);
     document.getElementById("saveFplBillBtn").addEventListener("click", saveFplBillDetails);
     document.getElementById("fplFileInput").addEventListener("change", uploadFplBill);
     document.getElementById("saveDailyBtn").addEventListener("click", saveDailyEntry);
+    document.getElementById("dailyLogMonth").addEventListener("change", () => renderDailySolarLog(dailyAllCache));
     setupNavActiveState();
     loadSolarHub();
   </script>
