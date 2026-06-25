@@ -1,21 +1,31 @@
-# Homestead Hub Landing Page
+# Homestead Hub PWA Scope Fix
 
-Add these files to the root of `homestead_hub/`.
+Replace these files at the root of `homestead_hub/`:
 
-## Replace/add at root
-- index.html
-- styles.css
-- app.js
-- manifest.json
-- service-worker.js
-- icons/icon-192.png
-- icons/icon-512.png
-- icons/apple-touch-icon.png
-- icons/favicon.png
+- `service-worker.js`
+- `manifest.json` (included unchanged for completeness)
+- `index.html` (included unchanged for completeness)
+- `styles.css` (included unchanged for completeness)
+- `app.js` (included unchanged for completeness)
+- `icons/` (included unchanged for completeness)
 
-## Do not change
-- finance_hub/
-- solar_hub/
-- tiny_tenant_hub/
+## What changed
 
-Each dashboard remains independently installable with its own manifest and icon.
+The root Homestead Hub service worker now ignores:
+
+- `/finance_hub/`
+- `/solar_hub/`
+- `/tiny_tenant_hub/`
+
+This prevents the Homestead Hub home-screen PWA from interfering with the individual dashboard apps.
+
+## After upload
+
+1. Commit and push.
+2. Open `https://f4jm9gtgyc-ui.github.io/homestead_hub/` in Safari/Chrome once.
+3. Refresh the page.
+4. Delete the old Homestead Hub home-screen icon.
+5. Add Homestead Hub to the home screen again.
+6. Open Homestead Hub from the home screen and tap Tiny Tenant.
+
+If Tiny Tenant still shows sync errors, open Tiny Tenant directly once and refresh. Its own service worker may also need to update.
