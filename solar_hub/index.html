@@ -730,6 +730,130 @@
       font-weight: 750;
     }
 
+
+    .debug-panel {
+      display: none;
+      margin: 22px auto 96px;
+      max-width: 1640px;
+      padding: 0 24px;
+    }
+
+    .debug-panel.is-visible {
+      display: block;
+    }
+
+    .debug-card {
+      background: rgba(255,250,242,.92);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+
+    .debug-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
+      padding: 18px 20px;
+      border-bottom: 1px solid rgba(90,62,39,.12);
+    }
+
+    .debug-head h3 {
+      margin: 0;
+      font-size: 18px;
+      letter-spacing: -.03em;
+    }
+
+    .debug-head p {
+      margin: 4px 0 0;
+      font-size: 13px;
+      color: var(--muted);
+    }
+
+    .debug-actions {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+
+    .debug-btn {
+      border: 1px solid var(--line);
+      background: rgba(255,255,255,.72);
+      border-radius: 12px;
+      padding: 10px 13px;
+      font-weight: 850;
+      color: var(--brown-dark);
+      cursor: pointer;
+    }
+
+    .debug-body {
+      padding: 18px 20px 22px;
+      display: grid;
+      gap: 16px;
+    }
+
+    .debug-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .debug-tile {
+      border: 1px solid rgba(90,62,39,.12);
+      border-radius: 14px;
+      padding: 13px 14px;
+      background: rgba(255,255,255,.48);
+      min-width: 0;
+    }
+
+    .debug-tile span {
+      display: block;
+      font-size: 12px;
+      color: var(--muted);
+      font-weight: 850;
+      text-transform: uppercase;
+      letter-spacing: .04em;
+      margin-bottom: 5px;
+    }
+
+    .debug-tile strong {
+      display: block;
+      font-size: 16px;
+      color: var(--ink);
+      overflow-wrap: anywhere;
+    }
+
+    .debug-ok { color: var(--green) !important; }
+    .debug-bad { color: var(--red) !important; }
+    .debug-warn { color: #a66c00 !important; }
+
+    .debug-log {
+      white-space: pre-wrap;
+      background: rgba(42,23,16,.05);
+      border: 1px solid rgba(90,62,39,.14);
+      border-radius: 14px;
+      padding: 14px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+      font-size: 12px;
+      line-height: 1.45;
+      color: var(--brown-dark);
+      max-height: 260px;
+      overflow: auto;
+    }
+
+    @media (max-width: 899px) {
+      .debug-panel { padding: 0 16px; }
+      .debug-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .debug-head { align-items: flex-start; flex-direction: column; }
+      .debug-actions { justify-content: flex-start; }
+    }
+
+    @media (max-width: 560px) {
+      .debug-grid { grid-template-columns: 1fr; }
+    }
+
     @media (min-width: 900px) and (max-width: 1180px) {
       .app { padding: 18px; }
       header { grid-template-columns: auto 210px 1fr auto; gap: 12px; }
@@ -1147,11 +1271,51 @@
     <a class="nav-btn" href="#manage">⚙ Manage</a>
   </nav>
 
+
+  <section id="debugPanel" class="debug-panel" aria-live="polite">
+    <div class="debug-card">
+      <div class="debug-head">
+        <div>
+          <h3>Developer Diagnostics</h3>
+          <p>Visible only when the URL includes <strong>?debug=true</strong>. Tiny flashlight for the database cave.</p>
+        </div>
+        <div class="debug-actions">
+          <button id="debugRefreshBtn" class="debug-btn" type="button">Refresh Diagnostics</button>
+          <button id="debugDownloadBtn" class="debug-btn" type="button">Download Debug Report</button>
+        </div>
+      </div>
+      <div class="debug-body">
+        <div class="debug-grid">
+          <div class="debug-tile"><span>App Version</span><strong id="debugVersion">Solar Hub 4.1</strong></div>
+          <div class="debug-tile"><span>Supabase URL</span><strong id="debugSupabaseUrl">--</strong></div>
+          <div class="debug-tile"><span>Connection</span><strong id="debugConnection">Checking...</strong></div>
+          <div class="debug-tile"><span>Last Check</span><strong id="debugLastCheck">--</strong></div>
+          <div class="debug-tile"><span>solar_daily</span><strong id="debugSolarDaily">--</strong></div>
+          <div class="debug-tile"><span>fpl_bills</span><strong id="debugFplBills">--</strong></div>
+          <div class="debug-tile"><span>fpl_bill_uploads</span><strong id="debugUploads">--</strong></div>
+          <div class="debug-tile"><span>solar_system</span><strong id="debugSystem">--</strong></div>
+          <div class="debug-tile"><span>Latest Billing Period</span><strong id="debugLatestPeriod">--</strong></div>
+          <div class="debug-tile"><span>Terra Entries</span><strong id="debugTerraProgress">--</strong></div>
+          <div class="debug-tile"><span>Latest Upload</span><strong id="debugLatestUpload">--</strong></div>
+          <div class="debug-tile"><span>Browser</span><strong id="debugBrowser">--</strong></div>
+        </div>
+        <div>
+          <div class="label" style="margin-bottom:8px;">Diagnostics Log</div>
+          <div id="debugLog" class="debug-log">Diagnostics not run yet.</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
   <script>
-    const SUPABASE_URL = "https://jzijopsswwqnhmrjbwgh.supabase.co";
-    const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp6aWpvcHNzd3dxbmhtcmpid2doIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE5MDg4MzMsImV4cCI6MjA5NzQ4NDgzM30.xINNWvchRGPr7hlcrSV98u_gsH2HFiQ_wdlXbGQ6MkM";
+    const SUPABASE_URL = "PASTE_YOUR_SUPABASE_PROJECT_URL_HERE";
+    const SUPABASE_ANON_KEY = "PASTE_YOUR_SUPABASE_ANON_KEY_HERE";
 
     const client = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    const APP_VERSION = "Solar Hub 4.1 Diagnostics";
+    const DEBUG_MODE = new URLSearchParams(window.location.search).get("debug") === "true";
+    let lastDebugReport = "";
+    let lastAppError = null;
     let dailyAllCache = [];
     let billingPeriodCache = [];
     let activeDailyPeriod = null;
@@ -1662,10 +1826,182 @@
           activeDailyPeriod = { start: activePeriod.bill.billing_start, end: activePeriod.bill.billing_end, label: `${activePeriod.month} · ${activePeriod.period}`, expected: activePeriod.expectedDays };
         }
         renderDailySolarLog(dailyAll);
+        lastAppError = null;
+        runDiagnostics();
       } catch (error) {
         console.error(error);
+        lastAppError = error;
         showError("Solar Hub could not load Supabase data. Check table names, RLS policies, and your Supabase URL/key. Technology remains deeply committed to making one missing permission feel like a mystery novel.");
+        runDiagnostics(error);
       }
+    }
+
+
+    function setDebugText(id, value, className = "") {
+      const el = document.getElementById(id);
+      if (!el) return;
+      el.textContent = value;
+      el.className = className;
+    }
+
+    function initDebugMode() {
+      if (!DEBUG_MODE) return;
+      document.getElementById("debugPanel")?.classList.add("is-visible");
+      setDebugText("debugVersion", APP_VERSION, "debug-ok");
+      setDebugText("debugSupabaseUrl", SUPABASE_URL.includes("PASTE_YOUR") ? "Missing Project URL" : SUPABASE_URL, SUPABASE_URL.includes("PASTE_YOUR") ? "debug-bad" : "debug-ok");
+      setDebugText("debugBrowser", navigator.userAgent);
+      document.getElementById("debugRefreshBtn")?.addEventListener("click", () => runDiagnostics(lastAppError));
+      document.getElementById("debugDownloadBtn")?.addEventListener("click", downloadDebugReport);
+      runDiagnostics();
+    }
+
+    async function tableCount(tableName) {
+      const { count, error } = await client.from(tableName).select("*", { count: "exact", head: true });
+      if (error) throw error;
+      return count ?? 0;
+    }
+
+    async function sampleRows(tableName, columns = "*", orderColumn = null) {
+      let query = client.from(tableName).select(columns).limit(5);
+      if (orderColumn) query = query.order(orderColumn, { ascending: false });
+      const { data, error } = await query;
+      if (error) throw error;
+      return data || [];
+    }
+
+    async function runDiagnostics(passedError = null) {
+      if (!DEBUG_MODE) return;
+      const now = new Date().toLocaleString();
+      const lines = [];
+      const statuses = {};
+
+      setDebugText("debugLastCheck", now);
+      lines.push(`${APP_VERSION}`);
+      lines.push(`Checked: ${now}`);
+      lines.push(`Page: ${window.location.href}`);
+      lines.push(`Supabase URL: ${SUPABASE_URL}`);
+      lines.push("");
+
+      if (SUPABASE_URL.includes("PASTE_YOUR") || SUPABASE_ANON_KEY.includes("PASTE_YOUR")) {
+        const msg = "Supabase credentials are still placeholders in this HTML file.";
+        setDebugText("debugConnection", "❌ Missing credentials", "debug-bad");
+        lines.push(`❌ ${msg}`);
+        lastDebugReport = lines.join("\n");
+        document.getElementById("debugLog").textContent = lastDebugReport;
+        return;
+      }
+
+      try {
+        const tables = [
+          ["solar_daily", "debugSolarDaily"],
+          ["fpl_bills", "debugFplBills"],
+          ["fpl_bill_uploads", "debugUploads"],
+          ["solar_system", "debugSystem"]
+        ];
+
+        for (const [tableName, elementId] of tables) {
+          try {
+            const count = await tableCount(tableName);
+            statuses[tableName] = { ok: true, count };
+            setDebugText(elementId, `✓ ${count} rows`, "debug-ok");
+            lines.push(`✓ ${tableName}: ${count} rows`);
+          } catch (error) {
+            statuses[tableName] = { ok: false, error: error.message };
+            setDebugText(elementId, `❌ ${error.message}`, "debug-bad");
+            lines.push(`❌ ${tableName}: ${error.message}`);
+          }
+        }
+
+        const connected = Object.values(statuses).some(status => status.ok);
+        setDebugText("debugConnection", connected ? "✓ Supabase reachable" : "❌ Query failures", connected ? "debug-ok" : "debug-bad");
+
+        let latestBill = null;
+        try {
+          const bills = await sampleRows("fpl_bills", "month,billing_start,billing_end,billing_days,current_bill,total_bill,sent_to_grid_kwh,applied_to_bill_kwh,reserve_balance_kwh,created_at", "billing_end");
+          latestBill = bills[0] || null;
+          if (latestBill?.billing_start && latestBill?.billing_end) {
+            setDebugText("debugLatestPeriod", `${latestBill.month || "Latest"}: ${latestBill.billing_start} → ${latestBill.billing_end}`);
+            lines.push("");
+            lines.push("Latest billing period:");
+            lines.push(JSON.stringify(latestBill, null, 2));
+          } else {
+            setDebugText("debugLatestPeriod", "No billing period found", "debug-warn");
+            lines.push("⚠ No billing period found in fpl_bills.");
+          }
+        } catch (error) {
+          setDebugText("debugLatestPeriod", `❌ ${error.message}`, "debug-bad");
+          lines.push(`❌ Latest billing period query failed: ${error.message}`);
+        }
+
+        try {
+          if (latestBill?.billing_start && latestBill?.billing_end) {
+            const expected = Number(latestBill.billing_days || 0);
+            const { data, error } = await client
+              .from("solar_daily")
+              .select("production_date,solar_generated_kwh")
+              .gt("production_date", latestBill.billing_start)
+              .lte("production_date", latestBill.billing_end)
+              .order("production_date", { ascending: true });
+            if (error) throw error;
+            const entered = (data || []).length;
+            const total = (data || []).reduce((sum, row) => sum + Number(row.solar_generated_kwh || 0), 0);
+            const className = expected && entered >= expected ? "debug-ok" : "debug-warn";
+            setDebugText("debugTerraProgress", `${entered}/${expected || "?"} days · ${number(total)} kWh`, className);
+            lines.push(`Terra entries for latest period: ${entered}/${expected || "?"} days, ${number(total)} kWh`);
+          } else {
+            setDebugText("debugTerraProgress", "No period selected", "debug-warn");
+          }
+        } catch (error) {
+          setDebugText("debugTerraProgress", `❌ ${error.message}`, "debug-bad");
+          lines.push(`❌ Terra progress query failed: ${error.message}`);
+        }
+
+        try {
+          const uploads = await sampleRows("fpl_bill_uploads", "file_name,file_path,billing_month,status,uploaded_at", "uploaded_at");
+          const latestUpload = uploads[0];
+          if (latestUpload) {
+            setDebugText("debugLatestUpload", `${latestUpload.file_name || "Upload"} · ${latestUpload.status || "saved"}`);
+            lines.push("");
+            lines.push("Latest upload:");
+            lines.push(JSON.stringify(latestUpload, null, 2));
+          } else {
+            setDebugText("debugLatestUpload", "No uploads", "debug-warn");
+          }
+        } catch (error) {
+          setDebugText("debugLatestUpload", `❌ ${error.message}`, "debug-bad");
+          lines.push(`❌ Latest upload query failed: ${error.message}`);
+        }
+
+        if (passedError || lastAppError) {
+          const error = passedError || lastAppError;
+          lines.push("");
+          lines.push("Application error:");
+          lines.push(error?.message || String(error));
+          if (error?.stack) lines.push(error.stack);
+        } else {
+          lines.push("");
+          lines.push("Application error: none captured by diagnostics.");
+        }
+      } catch (error) {
+        setDebugText("debugConnection", `❌ ${error.message}`, "debug-bad");
+        lines.push(`❌ Diagnostics failed: ${error.message}`);
+      }
+
+      lastDebugReport = lines.join("\n");
+      document.getElementById("debugLog").textContent = lastDebugReport;
+    }
+
+    function downloadDebugReport() {
+      const report = lastDebugReport || "Diagnostics report is empty. Click Refresh Diagnostics first.";
+      const blob = new Blob([report], { type: "text/plain" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `solar-hub-debug-${todayISO()}.txt`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(url);
     }
 
 
@@ -2078,6 +2414,7 @@
     document.getElementById("dailyLogMonth").addEventListener("change", () => renderDailySolarLog(dailyAllCache));
     document.getElementById("dashboardMonthSelector")?.addEventListener("change", loadSolarHub);
     setupNavActiveState();
+    initDebugMode();
     loadSolarHub();
   </script>
 </body>
