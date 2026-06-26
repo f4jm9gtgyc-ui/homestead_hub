@@ -1308,11 +1308,11 @@
   </section>
 
   <script>
-    const SUPABASE_URL = "https://jzijopsswwqnhmrjbwgh.supabase.co";
-    const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp6aWpvcHNzd3dxbmhtcmpid2doIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE5MDg4MzMsImV4cCI6MjA5NzQ4NDgzM30.xINNWvchRGPr7hlcrSV98u_gsH2HFiQ_wdlXbGQ6MkM";
+    const SUPABASE_URL = "PASTE_YOUR_SUPABASE_PROJECT_URL_HERE";
+    const SUPABASE_ANON_KEY = "PASTE_YOUR_SUPABASE_ANON_KEY_HERE";
 
     const client = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-    const APP_VERSION = "Solar Hub 4.1 Diagnostics";
+    const APP_VERSION = "Solar Hub 4.1.1 Diagnostics";
     const DEBUG_MODE = new URLSearchParams(window.location.search).get("debug") === "true";
     let lastDebugReport = "";
     let lastAppError = null;
@@ -2004,6 +2004,13 @@
       URL.revokeObjectURL(url);
     }
 
+
+    function formatShortDate(dateString) {
+      if (!dateString) return "--";
+      const date = new Date(`${dateString}T12:00:00`);
+      if (Number.isNaN(date.getTime())) return String(dateString);
+      return date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+    }
 
     function monthKeyFromLabel(label) {
       if (!label) return monthValueFromDate(todayISO());
