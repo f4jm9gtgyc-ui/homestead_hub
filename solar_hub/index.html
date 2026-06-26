@@ -4,6 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <title>Solar Hub</title>
+  <!-- Solar Hub v4: billing-period data model, computed once and reused across widgets. -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
@@ -1147,11 +1148,12 @@
   </nav>
 
   <script>
-    const SUPABASE_URL = "https://jzijopsswwqnhmrjbwgh.supabase.co";
-    const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp6aWpvcHNzd3dxbmhtcmpid2doIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE5MDg4MzMsImV4cCI6MjA5NzQ4NDgzM30.xINNWvchRGPr7hlcrSV98u_gsH2HFiQ_wdlXbGQ6MkM";
+    const SUPABASE_URL = "PASTE_YOUR_SUPABASE_PROJECT_URL_HERE";
+    const SUPABASE_ANON_KEY = "PASTE_YOUR_SUPABASE_ANON_KEY_HERE";
 
     const client = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
     let dailyAllCache = [];
+    let billingPeriodCache = [];
     let activeDailyPeriod = null;
 
     if (window.pdfjsLib) {
@@ -1569,38 +1571,40 @@
 
         const monthly = monthlyRes.data || [];
         const bills = billsRes.data || [];
-        const selectedKey = document.getElementById("dashboardMonthSelector")?.value || "";
-        let bill = null;
-        if (selectedKey) {
-          bill = (bills || []).find(row => monthKeyFromBill(row) === selectedKey) || null;
-        }
-        bill = bill || bills[0] || null;
         const sys = (systemRes.data || [])[0] || {};
         const dailyMonth = dailyMonthRes.data || [];
         const dailyAll = dailyAllRes.data || [];
         const uploads = uploadsRes.data || [];
         dailyAllCache = dailyAll;
 
+        billingPeriodCache = buildBillingPeriodRecords(bills, monthly, dailyAll);
+        const selectedKey = document.getElementById("dashboardMonthSelector")?.value || "";
+        let activePeriod = selectedKey
+          ? billingPeriodCache.find(period => period.key === selectedKey || period.monthKey === selectedKey)
+          : null;
+        activePeriod = activePeriod || billingPeriodCache[0] || null;
+
         const latestMonthly = monthly[0] || {};
-        const displayMonth = bill ? monthNameFromBill(bill) : monthLabel(today);
-        const displayMonthKey = bill ? monthKeyFromBill(bill) : (selectedKey || monthValueFromDate(today));
+        const bill = activePeriod?.bill || bills[0] || null;
+        const displayMonth = activePeriod?.month || (bill ? monthNameFromBill(bill) : monthLabel(today));
+        const displayMonthKey = activePeriod?.key || (bill ? monthKeyFromBill(bill) : (selectedKey || monthValueFromDate(today)));
         const dashboardMonthSelector = document.getElementById("dashboardMonthSelector");
         if (dashboardMonthSelector && !dashboardMonthSelector.value) dashboardMonthSelector.value = displayMonthKey;
 
-        const selectedDaily = bill ? billingPeriodDailyRows(dailyAll, bill) : dailyAll.filter(row => monthValueFromDate(row.production_date) === displayMonthKey);
-        const mtd = selectedDaily.reduce((sum, row) => sum + Number(row.solar_generated_kwh || 0), 0);
+        const selectedDaily = activePeriod?.dailyRows || (bill ? billingPeriodDailyRows(dailyAll, bill) : dailyAll.filter(row => monthValueFromDate(row.production_date) === displayMonthKey));
+        const mtd = activePeriod?.solarGenerated ?? selectedDaily.reduce((sum, row) => sum + Number(row.solar_generated_kwh || 0), 0);
         const todayRow = dailyAll.find(row => row.production_date === today);
         const todayProduction = Number(todayRow?.solar_generated_kwh || 0);
         const avg = selectedDaily.length ? mtd / selectedDaily.length : 0;
         const best = selectedDaily.reduce((max, row) => Math.max(max, Number(row.solar_generated_kwh || 0)), 0);
         const latestDaily = dailyAll[0];
 
-        const displaySolar = mtd || Number(latestMonthly.solar_generated_kwh || 0);
-        const totalUsage = Number(bill?.total_usage_kwh ?? latestMonthly.home_usage_kwh ?? 0);
-        const reserveBalance = Number(bill?.reserve_balance_kwh ?? latestMonthly.net_meter_bank_kwh ?? 0);
-        const currentBill = Number(bill?.current_bill ?? bill?.total_bill ?? 0);
-        const sentToGrid = Number(bill?.sent_to_grid_kwh ?? latestMonthly.sent_to_fpl_kwh ?? 0);
-        const appliedToBill = Number(bill?.applied_to_bill_kwh ?? 0);
+        const displaySolar = Number(mtd || activePeriod?.solarGenerated || latestMonthly.solar_generated_kwh || 0);
+        const totalUsage = Number(activePeriod?.usage ?? bill?.total_usage_kwh ?? latestMonthly.home_usage_kwh ?? 0);
+        const reserveBalance = Number(activePeriod?.reserve ?? bill?.reserve_balance_kwh ?? latestMonthly.net_meter_bank_kwh ?? 0);
+        const currentBill = Number(activePeriod?.billTotal ?? bill?.current_bill ?? bill?.total_bill ?? 0);
+        const sentToGrid = Number(activePeriod?.sent ?? bill?.sent_to_grid_kwh ?? latestMonthly.sent_to_fpl_kwh ?? 0);
+        const appliedToBill = Number(activePeriod?.applied ?? bill?.applied_to_bill_kwh ?? 0);
         const reserveAdded = Number(bill?.reserve_added_kwh ?? 0);
         const estimatedSavings = appliedToBill * 0.125;
 
@@ -1652,10 +1656,10 @@
         setText("lifeApplied", intNumber(lifetimeApplied));
         setText("inService", sys.in_service_since || "--");
 
-        renderMonthlyTable(monthly, bills, displaySolar, bill);
-        renderEnergyChart(buildChartRows(monthly, bills, displaySolar, bill));
-        if (!activeDailyPeriod && bill?.billing_start && bill?.billing_end) {
-          activeDailyPeriod = { start: bill.billing_start, end: bill.billing_end, label: `${monthNameFromBill(bill)} · ${billPeriodLabel(bill)}`, expected: expectedDaysForBill(bill) };
+        renderMonthlyTable(billingPeriodCache, monthly);
+        renderEnergyChart(buildChartRows(billingPeriodCache, monthly));
+        if (!activeDailyPeriod && activePeriod?.bill?.billing_start && activePeriod?.bill?.billing_end) {
+          activeDailyPeriod = { start: activePeriod.bill.billing_start, end: activePeriod.bill.billing_end, label: `${activePeriod.month} · ${activePeriod.period}`, expected: activePeriod.expectedDays };
         }
         renderDailySolarLog(dailyAll);
       } catch (error) {
@@ -1759,95 +1763,94 @@
       document.getElementById("dailyLogRows")?.scrollIntoView({ behavior: "smooth", block: "start" });
     }
 
-    function buildChartRows(monthly, bills, currentSolar, currentBill) {
-      const rows = [];
-      const billRows = (bills || []).slice(0, 12).reverse();
-
-      if (billRows.length) {
-        billRows.forEach((bill, index) => {
-          const label = monthNameFromBill(bill);
-          const matchingMonthly = (monthly || []).find(row => row.month === bill.month || row.month === label);
-          const monthKey = monthKeyFromBill(bill);
-          const dailySolar = billingPeriodDailyRows(dailyAllCache, bill)
-            .reduce((sum, row) => sum + Number(row.solar_generated_kwh || 0), 0);
-          rows.push({
-            month: label,
-            solar: dailySolar || Number(matchingMonthly?.solar_generated_kwh || 0),
-            usage: Number(bill.total_usage_kwh || matchingMonthly?.home_usage_kwh || 0),
-            sent: Number(bill.sent_to_grid_kwh || matchingMonthly?.sent_to_fpl_kwh || 0)
-          });
-        });
-      } else {
-        (monthly || []).slice(0, 12).reverse().forEach(row => {
-          rows.push({
-            month: row.month,
-            solar: Number(row.solar_generated_kwh || 0),
-            usage: Number(row.home_usage_kwh || 0),
-            sent: Number(row.sent_to_fpl_kwh || 0)
-          });
-        });
-      }
-
-      return rows;
-    }
-
-    function renderMonthlyTable(monthly, bills, currentSolar, currentBill) {
-      const tbody = document.getElementById("monthlyRows");
-      const rows = [];
-
-      (bills || []).slice(0, 8).forEach((bill) => {
+    function buildBillingPeriodRecords(bills, monthly, dailyRows) {
+      const billRows = (bills || []).slice();
+      const records = billRows.map((bill) => {
         const label = monthNameFromBill(bill);
         const key = monthKeyFromBill(bill);
         const matchingMonthly = (monthly || []).find(row => row.month === bill.month || row.month === label);
-        const dailyForPeriod = billingPeriodDailyRows(dailyAllCache, bill);
+        const dailyForPeriod = billingPeriodDailyRows(dailyRows || [], bill);
         const solarTotal = dailyForPeriod.reduce((sum, row) => sum + Number(row.solar_generated_kwh || 0), 0) || Number(matchingMonthly?.solar_generated_kwh || 0);
         const expected = expectedDaysForBill(bill);
         const entered = dailyForPeriod.length;
-
-        rows.push({
+        return {
           bill,
+          key,
+          monthKey: key,
           month: label,
           period: billPeriodLabel(bill),
-          monthKey: key,
+          dailyRows: dailyForPeriod,
+          expectedDays: expected,
+          enteredDays: entered,
+          missingDays: Math.max(0, expected - entered),
           terraDays: `${entered}/${expected}`,
           terraStatus: entered >= expected ? "status-good" : entered >= Math.max(0, expected - 2) ? "status-low" : "status-missing",
-          solar: solarTotal,
+          solarGenerated: solarTotal,
           usage: Number(bill.total_usage_kwh || matchingMonthly?.home_usage_kwh || 0),
           sent: Number(bill.sent_to_grid_kwh || matchingMonthly?.sent_to_fpl_kwh || 0),
           applied: Number(bill.applied_to_bill_kwh || 0),
           reserve: Number(bill.reserve_balance_kwh || matchingMonthly?.net_meter_bank_kwh || 0),
           billTotal: Number(bill.current_bill ?? bill.total_bill ?? 0)
-        });
+        };
       });
 
-      if (!rows.length) {
-        (monthly || []).slice(0, 8).forEach(row => {
-          const key = monthKeyFromLabel(row.month);
-          const dailyForMonth = dailyAllCache.filter(item => monthValueFromDate(item.production_date) === key);
-          const expected = expectedDaysForMonthKey(key);
-          rows.push({
-            bill: null,
-            month: row.month,
-            period: "--",
-            monthKey: key,
-            terraDays: `${dailyForMonth.length}/${expected}`,
-            terraStatus: dailyForMonth.length >= expected ? "status-good" : "status-missing",
-            solar: dailyForMonth.reduce((sum, item) => sum + Number(item.solar_generated_kwh || 0), 0) || Number(row.solar_generated_kwh || 0),
-            usage: Number(row.home_usage_kwh || 0),
-            sent: Number(row.sent_to_fpl_kwh || 0),
-            applied: 0,
-            reserve: Number(row.net_meter_bank_kwh || 0),
-            billTotal: 0
-          });
-        });
+      if (records.length) return records;
+
+      return (monthly || []).slice(0, 8).map(row => {
+        const key = monthKeyFromLabel(row.month);
+        const dailyForMonth = (dailyRows || []).filter(item => monthValueFromDate(item.production_date) === key);
+        const expected = expectedDaysForMonthKey(key);
+        const entered = dailyForMonth.length;
+        return {
+          bill: null,
+          key,
+          monthKey: key,
+          month: row.month,
+          period: "--",
+          dailyRows: dailyForMonth,
+          expectedDays: expected,
+          enteredDays: entered,
+          missingDays: Math.max(0, expected - entered),
+          terraDays: `${entered}/${expected}`,
+          terraStatus: entered >= expected ? "status-good" : "status-missing",
+          solarGenerated: dailyForMonth.reduce((sum, item) => sum + Number(item.solar_generated_kwh || 0), 0) || Number(row.solar_generated_kwh || 0),
+          usage: Number(row.home_usage_kwh || 0),
+          sent: Number(row.sent_to_fpl_kwh || 0),
+          applied: 0,
+          reserve: Number(row.net_meter_bank_kwh || 0),
+          billTotal: 0
+        };
+      });
+    }
+
+    function buildChartRows(periods, monthly) {
+      const periodRows = (periods || []).slice(0, 12).reverse();
+      if (periodRows.length) {
+        return periodRows.map(period => ({
+          month: period.month,
+          solar: Number(period.solarGenerated || 0),
+          usage: Number(period.usage || 0),
+          sent: Number(period.sent || 0)
+        }));
       }
+      return (monthly || []).slice(0, 12).reverse().map(row => ({
+        month: row.month,
+        solar: Number(row.solar_generated_kwh || 0),
+        usage: Number(row.home_usage_kwh || 0),
+        sent: Number(row.sent_to_fpl_kwh || 0)
+      }));
+    }
+
+    function renderMonthlyTable(periods, monthly) {
+      const tbody = document.getElementById("monthlyRows");
+      const rows = (periods || []).slice(0, 8);
 
       tbody.innerHTML = rows.map((row, index) => `
         <tr class="month-row" data-row-index="${index}" data-month-key="${row.monthKey}">
           <td><strong>${row.month}</strong></td>
           <td>${row.period}</td>
           <td class="right"><span class="status-badge ${row.terraStatus}">${row.terraDays}</span></td>
-          <td class="right">${intNumber(row.solar)}</td>
+          <td class="right">${intNumber(row.solarGenerated)}</td>
           <td class="right">${intNumber(row.usage)}</td>
           <td class="right">${intNumber(row.sent)}</td>
           <td class="right">${intNumber(row.applied)}</td>
