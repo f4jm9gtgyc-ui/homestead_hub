@@ -1,0 +1,162 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#f5f3ef" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-title" content="Papa's Pocketbook" />
+  <title>Papa's Pocketbook</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+<div id="loginScreen" class="login-screen">
+  <div class="login-card">
+    <div class="login-mark">PP</div>
+    <h1>Papa's Pocketbook</h1>
+    <p>Sign in with the same Homestead Hub account used for Finance Hub.</p>
+    <form id="loginForm" class="login-form">
+      <label>Email<input id="loginEmail" type="email" autocomplete="username" required /></label>
+      <label>Password<input id="loginPassword" type="password" autocomplete="current-password" required /></label>
+      <button id="loginSubmitBtn" class="primary" type="submit">Sign In</button>
+      <div id="loginError" class="login-error" role="alert"></div>
+    </form>
+  </div>
+</div>
+
+<div class="wrap app-shell" hidden>
+  <header class="topbar">
+    <div class="brand">
+      <a class="back-link" href="../">← Homestead Hub</a>
+      <h1>Papa's Pocketbook</h1>
+      <p>Account tracking, automatic activity, and future payment planning.</p>
+    </div>
+    <div class="actions">
+      <span id="syncStatus" class="sync-status">Connecting…</span>
+      <button id="balanceBtn" type="button">Set Balance</button>
+      <button id="exportBtn" type="button">Export CSV</button>
+      <button id="signOutBtn" type="button">Sign Out</button>
+      <button id="addTransactionBtn" class="primary" type="button">+ Add Transaction</button>
+    </div>
+  </header>
+
+  <section class="grid cards" aria-label="Account summary">
+    <article class="card"><div class="label">Current Balance</div><div id="currentBalance" class="value">$0.00</div><div id="balanceAsOf" class="sub">No transactions yet</div></article>
+    <article class="card"><div class="label">Deposits This Month</div><div id="monthCredits" class="value positive">+$0.00</div><div id="monthCreditsCount" class="sub">0 posted credits</div></article>
+    <article class="card"><div class="label">Debits This Month</div><div id="monthDebits" class="value negative">-$0.00</div><div id="monthDebitsCount" class="sub">0 posted debits</div></article>
+    <article class="card"><div class="label">Reserved</div><div id="reservedTotal" class="value">$0.00</div><div class="sub">For planned obligations</div></article>
+    <article class="card"><div class="label">Available</div><div id="availableBalance" class="value">$0.00</div><div class="sub">Balance minus reserves</div></article>
+  </section>
+
+  <section class="grid two">
+    <article class="panel">
+      <div class="panel-head"><div><h2>90-Day Cash Flow</h2><p class="section-note">Scheduled items affect projections, not the actual bank balance.</p></div></div>
+      <div class="forecast">
+        <div class="mini"><div class="label">Scheduled Credits</div><div id="forecastCredits" class="value positive">+$0.00</div><div class="sub">Next 90 days</div></div>
+        <div class="mini"><div class="label">Scheduled Debits</div><div id="forecastDebits" class="value negative">-$0.00</div><div class="sub">Next 90 days</div></div>
+        <div class="mini"><div class="label">Projected Balance</div><div id="projectedBalance" class="value">$0.00</div><div class="sub">After scheduled activity</div></div>
+        <div class="mini"><div class="label">Projected Available</div><div id="projectedAvailable" class="value">$0.00</div><div class="sub">After reserves</div></div>
+      </div>
+    </article>
+
+    <article class="panel">
+      <div class="panel-head">
+        <div><h2>Recurring Activity</h2><p class="section-note">Automatic credits and debits.</p></div>
+        <button id="addRecurringBtn" class="small-btn" type="button">+ Add</button>
+      </div>
+      <div id="recurringList" class="recurring-list"></div>
+    </article>
+  </section>
+
+  <section class="panel section-gap">
+    <div class="panel-head">
+      <div><h2>Upcoming Large Obligations</h2><p class="section-note">Quarterly and annual payments with reserve targets.</p></div>
+      <button id="addObligationBtn" class="small-btn" type="button">+ Add</button>
+    </div>
+    <div id="obligationsList"></div>
+  </section>
+
+  <section class="panel">
+    <div class="ledger-head">
+      <div><h2>Transaction Ledger</h2><p class="section-note">Actual posted bank activity only.</p></div>
+      <div class="toolbar">
+        <input id="searchInput" type="search" placeholder="Search transactions" />
+        <select id="categoryFilter"><option value="all">All categories</option></select>
+      </div>
+    </div>
+    <div class="table-wrap">
+      <table id="ledger">
+        <thead><tr><th>Date</th><th>Description</th><th>Category</th><th>Type</th><th class="amt">Amount</th><th class="amt">Balance</th><th>Notes</th><th></th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+    <div id="emptyLedger" class="empty-state" hidden>No transactions yet. Papa's fortune remains mysteriously undocumented.</div>
+  </section>
+
+  <footer>Synced with the same Supabase project as Finance Hub and Tiny Tenant.</footer>
+</div>
+
+
+<dialog id="balanceDialog">
+  <form id="balanceForm" class="dialog-form">
+    <div class="dialog-head"><div><h3>Starting Bank Balance</h3><p>Use the bank balance as of a specific date. Transactions after that date update the current balance.</p></div><button class="icon-btn" type="button" data-close="balanceDialog">×</button></div>
+    <div class="form-grid">
+      <label>Balance Date<input id="openingBalanceDate" type="date" required /></label>
+      <label>Bank Balance<input id="openingBalanceAmount" type="number" step="0.01" required /></label>
+    </div>
+    <div class="dialog-actions"><button type="button" data-close="balanceDialog">Cancel</button><button class="primary" type="submit">Save Balance</button></div>
+  </form>
+</dialog>
+
+<dialog id="transactionDialog">
+  <form id="transactionForm" class="dialog-form">
+    <div class="dialog-head"><div><h3 id="transactionDialogTitle">Add Transaction</h3><p>Enter actual posted activity.</p></div><button class="icon-btn" type="button" data-close="transactionDialog">×</button></div>
+    <div class="form-grid">
+      <label>Date<input id="txDate" type="date" required /></label>
+      <label>Type<select id="txType" required><option value="credit">Credit</option><option value="debit">Debit</option></select></label>
+      <label class="wide">Description<input id="txDescription" type="text" required maxlength="100" /></label>
+      <label>Amount<input id="txAmount" type="number" min="0.01" step="0.01" required /></label>
+      <label>Category<input id="txCategory" type="text" list="categorySuggestions" required /></label>
+      <label class="wide">Notes<textarea id="txNotes" rows="2" maxlength="250"></textarea></label>
+    </div>
+    <div class="dialog-actions"><button type="button" data-close="transactionDialog">Cancel</button><button class="primary" type="submit">Save Transaction</button></div>
+  </form>
+</dialog>
+
+<dialog id="recurringDialog">
+  <form id="recurringForm" class="dialog-form">
+    <div class="dialog-head"><div><h3>Add Recurring Activity</h3><p>Used for future cash-flow projections.</p></div><button class="icon-btn" type="button" data-close="recurringDialog">×</button></div>
+    <div class="form-grid">
+      <label class="wide">Description<input id="recDescription" type="text" required /></label>
+      <label>Type<select id="recType"><option value="credit">Auto credit</option><option value="debit">Auto debit</option></select></label>
+      <label>Amount<input id="recAmount" type="number" min="0.01" step="0.01" required /></label>
+      <label>Frequency<select id="recFrequency"><option value="monthly">Monthly</option><option value="quarterly">Quarterly</option><option value="semiannual">Semiannual</option><option value="annual">Annual</option></select></label>
+      <label>Next Date<input id="recNextDate" type="date" required /></label>
+      <label class="wide">Category<input id="recCategory" type="text" list="categorySuggestions" required /></label>
+    </div>
+    <div class="dialog-actions"><button type="button" data-close="recurringDialog">Cancel</button><button class="primary" type="submit">Save Recurring Item</button></div>
+  </form>
+</dialog>
+
+<dialog id="obligationDialog">
+  <form id="obligationForm" class="dialog-form">
+    <div class="dialog-head"><div><h3>Add Planned Obligation</h3><p>Track larger quarterly or annual bills.</p></div><button class="icon-btn" type="button" data-close="obligationDialog">×</button></div>
+    <div class="form-grid">
+      <label class="wide">Name<input id="oblName" type="text" required /></label>
+      <label>Due Date<input id="oblDueDate" type="date" required /></label>
+      <label>Target Amount<input id="oblTarget" type="number" min="0.01" step="0.01" required /></label>
+      <label>Reserved So Far<input id="oblReserved" type="number" min="0" step="0.01" value="0" required /></label>
+      <label>Frequency<select id="oblFrequency"><option value="annual">Annual</option><option value="quarterly">Quarterly</option><option value="semiannual">Semiannual</option><option value="one-time">One-time</option></select></label>
+    </div>
+    <div class="dialog-actions"><button type="button" data-close="obligationDialog">Cancel</button><button class="primary" type="submit">Save Obligation</button></div>
+  </form>
+</dialog>
+
+<datalist id="categorySuggestions">
+  <option value="Income"><option value="Housing"><option value="Utilities"><option value="Medical"><option value="Groceries"><option value="Insurance"><option value="Transportation"><option value="Personal"><option value="Cash / ATM"><option value="Transfers"><option value="Other">
+</datalist>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
