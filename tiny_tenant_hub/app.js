@@ -66,6 +66,8 @@ function bindEvents() {
 
   $("appointmentForm")?.addEventListener("submit", async (event) => {
     event.preventDefault();
+    const form = event.currentTarget;
+    const submitButton = form.querySelector('button[type="submit"]');
     const appointment = {
       appointment_key: crypto.randomUUID(),
       profile_key: PROFILE_KEY,
@@ -78,12 +80,31 @@ function bindEvents() {
       notes: $("appointmentNotes").value.trim()
     };
     if (!appointment.title || !appointment.appointment_date || !appointment.appointment_time) return;
-    state.appointments.push(appointment);
-    writeLocal(STORAGE_KEYS.appointments, state.appointments);
-    event.target.reset();
-    renderAppointments();
-    try { await saveAppointment(appointment); showToast("Appointment added."); }
-    catch (error) { showToast(`Appointment saved locally only: ${error.message}`); }
+    const originalButtonText = submitButton?.textContent || "Add Appointment";
+    if (submitButton) {
+      submitButton.disabled = true;
+      submitButton.textContent = "Saving…";
+    }
+    try {
+      const savedAppointment = await saveAppointment(appointment);
+      state.appointments = state.appointments.filter((item) => item.appointment_key !== savedAppointment.appointment_key);
+      state.appointments.push(savedAppointment);
+      writeLocal(STORAGE_KEYS.appointments, state.appointments);
+      form.reset();
+      $("appointmentDate").value = todayISO();
+      renderAppointments();
+      setSyncStatus("Synced");
+      showToast("Appointment saved and synced.");
+    } catch (error) {
+      console.error("Appointment save failed:", error);
+      setSyncStatus("Sync error");
+      showToast(`Appointment was not saved: ${error.message}`);
+    } finally {
+      if (submitButton) {
+        submitButton.disabled = false;
+        submitButton.textContent = originalButtonText;
+      }
+    }
   });
 }
 
@@ -128,8 +149,15 @@ async function saveProfile(profile) {
 }
 
 async function saveAppointment(appointment) {
-  const { error } = await supabaseClient.from("pregnancy_appointments").upsert(appointment, { onConflict: "profile_key,appointment_key" });
+  if (!supabaseClient) throw new Error("Supabase connection is unavailable.");
+  const { data, error } = await supabaseClient
+    .from("pregnancy_appointments")
+    .insert(appointment)
+    .select()
+    .single();
   if (error) throw new Error(error.message);
+  if (!data) throw new Error("Supabase did not confirm the saved appointment.");
+  return data;
 }
 
 async function deleteAppointment(appointment) {
