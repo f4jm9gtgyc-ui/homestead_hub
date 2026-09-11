@@ -1,0 +1,13 @@
+{
+  "name": "Tiny Tenant",
+  "short_name": "Tiny Tenant",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#f7f4ef",
+  "theme_color": "#8eb8d9",
+  "description": "Pregnancy progress, appointments, weekly development, and Babylist registry dashboard.",
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ]
+}

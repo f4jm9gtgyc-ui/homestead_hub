@@ -1,0 +1,133 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#d8e9f7" />
+  <title>Tiny Tenant</title>
+  <link rel="manifest" href="manifest.json" />
+  <link rel="icon" href="icons/icon-192.png" />
+  <link rel="apple-touch-icon" href="icons/icon-192.png" />
+  <link rel="stylesheet" href="styles.css?v=1.3.0" />
+  <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+</head>
+<body>
+  <div class="app-shell">
+    <header class="app-header">
+      <a class="back-link" href="../">← Homestead Hub</a>
+      <div class="brand-row">
+        <img src="icons/icon-192.png" alt="" class="app-icon" />
+        <div>
+          <p class="eyebrow">Tiny Tenant</p>
+          <h1>Managing your smallest and most expensive tenant.</h1>
+          <p class="subtle">Pregnancy progress, appointments, and registry details in one calm command center.</p>
+        </div>
+      </div>
+    </header>
+
+    <main>
+      <section class="card welcome-card">
+        <div>
+          <p class="eyebrow">Welcome</p>
+          <h2>Preparing for move-in day.</h2>
+          <p id="welcomeMoveIn" class="subtle">Set a due date to calculate the official tiny tenant move-in estimate.</p>
+        </div>
+        <div class="welcome-badge">
+          <span>Occupancy Status</span>
+          <strong id="welcomeStatus">Under construction</strong>
+        </div>
+      </section>
+
+      <section class="grid top-widgets">
+        <article class="card progress-card">
+          <div class="ring" id="progressRing" style="--progress:0"><span id="progressPercent">0%</span></div>
+          <div>
+            <span class="metric-label">Pregnancy Progress</span>
+            <h2 id="weekDay">Set your due date</h2>
+            <p id="trimester" class="subtle">Trimester appears here</p>
+          </div>
+        </article>
+        <article class="card metric-card"><span class="metric-label">Days Remaining</span><strong id="daysRemaining">—</strong><p id="countdownText">Until due date</p></article>
+        <article class="card metric-card"><span class="metric-label">Baby Size</span><strong id="babySize">—</strong><p>Fruit, animal, or object comparison</p></article>
+        <article class="card metric-card"><span class="metric-label">Next Appointment</span><strong id="nextAppointmentDate">—</strong><p id="nextAppointmentTitle">No upcoming appointment</p></article>
+      </section>
+
+      <section class="grid two-col">
+        <article class="card section-card">
+          <div class="section-head"><div><p class="eyebrow">Pregnancy Overview</p><h2>Timeline</h2></div><span class="sync-pill" id="syncStatus">Loading</span></div>
+          <form id="profileForm" class="stacked-form">
+            <label>Due Date<input type="date" id="dueDate" required /></label>
+            <button class="primary-btn" type="submit">Save Due Date</button>
+          </form>
+          <div class="timeline-card">
+            <div class="timeline-head"><strong id="weekOfForty">Week — of 40</strong><span id="timelinePercent">0%</span></div>
+            <div class="timeline-track" aria-hidden="true"><span id="timelineFill"></span><i id="timelineMarker"></i></div>
+            <div class="timeline-labels"><span>Week 1</span><span>Week 20</span><span>Week 40</span></div>
+          </div>
+          <div class="summary-list">
+            <p><strong>Current:</strong> <span id="overviewWeek">—</span></p>
+            <p><strong>Due-date countdown:</strong> <span id="overviewCountdown">—</span></p>
+            <p><strong>Trimester:</strong> <span id="overviewTrimester">—</span></p>
+            <p><strong>Complete:</strong> <span id="overviewPercent">—</span></p>
+          </div>
+        </article>
+
+        <article class="card section-card illustration-card">
+          <p class="eyebrow">Baby Development</p>
+          <h2 id="developmentTitle">Weekly Development</h2>
+          <div class="size-illustration">
+            <div class="size-orb"><span id="sizeEmoji">🏠</span></div>
+            <div><strong id="sizeIllustrationLabel">Size comparison</strong><p id="sizeIllustrationSub">Enter your due date to unlock the tiny produce report.</p></div>
+          </div>
+          <div class="fact-grid">
+            <div><span>Size</span><strong id="developmentSizeFact">—</strong></div>
+            <div><span>Milestone</span><strong id="babyMilestone">—</strong></div>
+            <div><span>For You</span><strong id="parentChangeNote">—</strong></div>
+          </div>
+          <div class="summary-list development-details">
+            <p><strong>Estimated Weight:</strong> <span id="babyWeight">—</span></p>
+            <p><strong>Estimated Length:</strong> <span id="babyLength">—</span></p>
+            <p id="babySummary">Enter your due date to see the weekly update.</p>
+          </div>
+        </article>
+      </section>
+
+      <section class="grid one-col">
+        <article class="card section-card">
+          <div class="section-head"><div><p class="eyebrow">Appointments</p><h2>OB Visits & Ultrasounds</h2></div><span class="pill" id="appointmentPill">0 upcoming</span></div>
+          <form id="appointmentForm" class="appointment-form">
+            <select id="appointmentType"><option>OB Visit</option><option>Ultrasound</option><option>Specialist</option><option>Lab Work</option><option>Other</option></select>
+            <input id="appointmentTitle" placeholder="Appointment title" required />
+            <input id="appointmentDate" type="date" required />
+            <input id="appointmentTime" type="time" required />
+            <input id="appointmentProvider" placeholder="Provider" />
+            <input id="appointmentLocation" placeholder="Location" />
+            <textarea id="appointmentNotes" placeholder="Notes"></textarea>
+            <button class="primary-btn" type="submit">Add Appointment</button>
+          </form>
+          <div id="appointmentList" class="appointment-list"></div>
+        </article>
+
+      </section>
+
+      <section class="grid one-col">
+        <article class="card registry-card">
+          <div class="registry-preview" role="img" aria-label="Baby Seymour registry preview">
+            <span aria-hidden="true">🍼</span>
+          </div>
+          <div class="registry-content">
+            <p class="eyebrow">Baby Registry</p>
+            <h2>Baby Seymour Registry</h2>
+            <p class="registry-meta">Kayla &amp; Pryce Seymour · Babylist</p>
+            <p class="subtle registry-message">To raise a child, it takes a village. Thanks for being part of ours!</p>
+            <a class="primary-btn registry-link" href="https://my.babylist.com/baby-seymour-registry" target="_blank" rel="noopener noreferrer">View Babylist Registry <span aria-hidden="true">→</span></a>
+            <p class="registry-note">Registry hosted securely on Babylist</p>
+          </div>
+        </article>
+      </section>
+    </main>
+  </div>
+
+  <script type="module" src="app.js?v=1.3.0"></script>
+</body>
+</html>
