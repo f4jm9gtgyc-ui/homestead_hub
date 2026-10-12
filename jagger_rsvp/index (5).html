@@ -1,0 +1,85 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Jagger's Baby Shower RSVP</title><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Allura&family=Cormorant+Garamond:wght@500;600;700&display=swap" rel="stylesheet"><style>
+:root{--navy:#284a63}*{box-sizing:border-box}body{margin:0;background:#f3e8d8 url('wood_background.png') center top / 720px auto repeat;font-family:'Cormorant Garamond',Georgia,serif;color:var(--navy)}.wrap{width:min(94vw,510px);margin:24px auto 45px}.card{position:relative;background:#f5eee3 url('rope_border.png') center center / 100% 100% no-repeat;min-height:710px;padding:125px 51px 67px;filter:drop-shadow(2px 7px 8px #54391f4a)}.kicker{text-align:center;letter-spacing:.17em;font-weight:700;font-size:14px;margin:0}.script{text-align:center;font-family:'Allura','Brush Script MT',cursive;font-weight:400;font-size:48.75px;line-height:1.02;margin:5px 0 22px}label,.question{display:block;font-size:23px;font-weight:700;line-height:1.1;margin:18px 0 8px}input,select,textarea{font:600 20px 'Cormorant Garamond',Georgia,serif;color:var(--navy);width:100%;background:#fffaf3c9;border:1px solid #9fa8af;border-radius:6px;padding:10px 13px;min-height:47px}textarea{min-height:80px;resize:vertical}input::placeholder,textarea::placeholder{color:#7d8790}.choice{display:block;width:100%;border:1px solid #a9b2bb;background:#e8e2d9d9;border-radius:7px;color:var(--navy);font:600 19px 'Cormorant Garamond',Georgia,serif;text-align:center;padding:12px 9px;margin:8px 0;cursor:pointer}.choice[aria-pressed=true]{background:var(--navy);color:white}.submit{margin-top:23px;width:100%;background:var(--navy);color:#fff;border:0;border-radius:32px;padding:12px 15px;font:700 26px 'Cormorant Garamond',Georgia,serif;cursor:pointer}.hidden{display:none!important}.submit:disabled{opacity:.7;cursor:wait}.status.error{color:#9c2525}.status.success{color:#24563a}.confirmation{text-align:center;padding:36px 0 42px}.confirmation h2{font-family:'Allura',cursive;font-size:52px;font-weight:400;margin:0 0 12px}.confirmation p{font-size:23px;font-weight:600;line-height:1.3}.confirmation .subtle{font-size:18px}.confirmation button{margin-top:16px}.status{scroll-margin-top:30px}.status{min-height:18px;text-align:center;font:600 14px system-ui,sans-serif;margin:12px 0 0}.note{text-align:center;font:12px system-ui,sans-serif;color:#5b544b;margin-top:12px}@media(max-width:480px){.wrap{width:min(98vw,430px);margin:10px auto 30px}.card{padding:106px 37px 52px;min-height:660px}.kicker{font-size:12px;letter-spacing:.12em}.script{font-size:39.75px;margin-bottom:13px}label,.question{font-size:20px;margin:14px 0 7px}input,select,textarea{font-size:18px;padding:9px 11px;min-height:43px}.choice{font-size:18px;padding:10px 8px}.submit{font-size:24px;margin-top:18px}}@media(max-width:360px){.card{padding:94px 31px 48px}.script{font-size:34.5px}.kicker{font-size:11px}}
+</style>
+
+</head>
+<body><main class="wrap"><section class="card"><p class="kicker">JAGGER'S BABY SHOWER</p><h1 class="script">RSVP</h1><form id="rsvp"><label for="name">Your Name</label><input id="name" autocomplete="name" placeholder="Enter your full name" required><p class="question">Will you be joining us?</p><button type="button" class="choice" data-answer="yes" aria-pressed="false">Yes, I will be there!</button><button type="button" class="choice" data-answer="no" aria-pressed="false">Unfortunately, I can't make it.</button><div id="guest-fields" class="hidden"><label for="count">How many guests will attend?</label><select id="count"><option value="">Select number of guests</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option><option>6</option><option>7</option><option>8</option></select><label for="others">Additional guests names</label><textarea id="others" placeholder="Enter additional guests' names"></textarea></div><button class="submit" type="submit">RSVP Now</button><div class="status" id="status" role="status" aria-live="polite"></div></form><div id="confirmation" class="confirmation hidden" role="status" aria-live="polite"><h2>Thank You!</h2><p id="confirmation-message"></p><p class="subtle">Your RSVP has been received.</p><button type="button" class="submit" id="another-rsvp">Submit Another RSVP</button></div></section></main><script>
+const SUPABASE_URL = 'https://dugyrawoqiztodugzwmi.supabase.co';
+const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_zqIUIBpxG6XTfQc8Zv_D-g_3Gu2MVzo';
+const form = document.getElementById('rsvp');
+const fields = document.getElementById('guest-fields');
+const count = document.getElementById('count');
+const status = document.getElementById('status');
+const submit = form.querySelector('.submit');
+const confirmation = document.getElementById('confirmation');
+let attendance = '';
+function showError(message) {
+  status.className = 'status error';
+  status.textContent = message;
+  status.scrollIntoView({behavior:'smooth',block:'nearest'});
+}
+document.querySelectorAll('.choice').forEach(button => button.addEventListener('click', () => {
+  attendance = button.dataset.answer;
+  document.querySelectorAll('.choice').forEach(other => other.setAttribute('aria-pressed', String(other === button)));
+  fields.classList.toggle('hidden', attendance !== 'yes');
+  count.required = attendance === 'yes';
+  status.textContent = '';
+  status.className = 'status';
+}));
+document.getElementById('another-rsvp').addEventListener('click', () => {
+  confirmation.classList.add('hidden');
+  form.classList.remove('hidden');
+  form.reset();
+  attendance = '';
+  fields.classList.add('hidden');
+  count.required = false;
+  status.textContent = '';
+  document.querySelectorAll('.choice').forEach(b => b.setAttribute('aria-pressed','false'));
+  window.scrollTo({top:0,behavior:'smooth'});
+});
+form.addEventListener('submit', async event => {
+  event.preventDefault();
+  if (submit.disabled) return;
+  if (!attendance) return showError('Please choose Yes or No before submitting.');
+  const guestName = document.getElementById('name').value.trim();
+  const guestCount = attendance === 'yes' ? Number(count.value) : 0;
+  const additionalNames = attendance === 'yes' ? document.getElementById('others').value.trim() : '';
+  if (!guestName || guestName.length > 120) return showError('Please enter your name (up to 120 characters).');
+  if (attendance === 'yes' && (!Number.isInteger(guestCount) || guestCount < 1 || guestCount > 8)) return showError('Please select the total number of guests attending.');
+  if (additionalNames.length > 800) return showError('Please shorten the additional guest names.');
+  submit.disabled = true;
+  submit.textContent = 'Submitting RSVP...';
+  status.className = 'status';
+  status.textContent = 'Sending your response securely...';
+  try {
+    const response = await fetch(`${SUPABASE_URL}/rest/v1/jagger_shower_rsvps`, {
+      method: 'POST',
+      headers: {
+        'apikey': SUPABASE_PUBLISHABLE_KEY,
+        'Content-Type': 'application/json',
+        'Prefer': 'return=minimal'
+      },
+      body: JSON.stringify({guest_name:guestName, attending:attendance === 'yes', guest_count:guestCount, additional_guest_names:additionalNames})
+    });
+    if (!response.ok) {
+      const detail = await response.text().catch(() => '');
+      console.error('RSVP server response:', response.status, detail);
+      throw new Error(`Server error ${response.status}`);
+    }
+    document.getElementById('confirmation-message').textContent = attendance === 'yes'
+      ? `We can't wait to celebrate with you, ${guestName}!`
+      : `Thank you for letting us know, ${guestName}. You'll be missed!`;
+    form.classList.add('hidden');
+    confirmation.classList.remove('hidden');
+    confirmation.scrollIntoView({behavior:'smooth',block:'start'});
+  } catch (error) {
+    console.error('RSVP submission failed:',error);
+    showError(error instanceof TypeError
+      ? 'Connection problem. Please check your internet connection and try again.'
+      : `Your RSVP was not saved (${error.message}). Please try again.`);
+  } finally {
+    submit.disabled = false;
+    submit.textContent = 'RSVP Now';
+  }
+});
+</script></body></html>
