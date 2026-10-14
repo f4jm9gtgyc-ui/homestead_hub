@@ -5,16 +5,114 @@
 .rsvp-help{color:#fff;text-align:center;font:16px/1.5 Georgia,serif;margin:0 auto 16px;max-width:42ch}
 .rsvp-iframe{display:block;width:100%;height:920px;border:0;background:#f2e8da;border-radius:12px}
 .rsvp-actions{display:flex;justify-content:center;gap:16px;flex-wrap:wrap;margin-top:16px}
-.rsvp-actions a{display:inline-block;padding:13px 20px;color:#284A63;background:#f6ecdb;border:2px solid #c6a477;border-radius:999px;font:600 15px/1.3 Georgia,serif;text-decoration:none;text-align:center}
+.rsvp-actions a{display:inline-block;padding:11px 24px;color:#284A63;background:#fffaf3d9;border:1px solid #284A63;border-radius:28px;font:700 19px/1.15 'Cormorant Garamond',Georgia,serif;text-decoration:none;text-align:center}
 .rsvp-actions a:focus-visible{outline:3px solid #fff;outline-offset:4px}
 @media(max-width:420px){#rsvp-form{padding:18px 6px 28px}.rsvp-iframe{height:980px}}
-[hidden]{display:none!important}body{overflow-x:hidden}.rsvp-page{min-height:100dvh}.rsvp-page .rsvp-iframe{min-height:75dvh}</style></head><body><main><section class="page home" id="photo-booth" aria-label="Meet Jagger's Crew"><img class="photo-strip" src="assets/photo-strip.webp" alt="Family photo strip featuring an ultrasound, Oakley and childhood photos"><img class="foreground" src="assets/homepage-overlay.png" alt="Meet Jagger's Crew nautical invitation with a brass porthole and olive branches"><a class="hotspot invite" href="#invitation" aria-label="Open Jagger's invitation"></a></section><section class="page" id="invitation" hidden aria-label="Jagger's baby shower invitation"><img class="art" src="assets/invitation-details.png" alt="Jagger Seymour baby shower, Saturday November 14 at 3:30 PM. RSVP by October 31. Books for Baby, location, raffle and registry." loading="lazy"><a class="hotspot location" href="https://www.google.com/maps/search/?api=1&amp;query=13052+Homestead+Ln+Parrish+FL" target="_blank" rel="noopener noreferrer" aria-label="Get directions"></a><a class="hotspot registry" href="https://my.babylist.com/baby-seymour-registry" target="_blank" rel="noopener noreferrer" aria-label="Open baby registry"></a><a class="hotspot rsvp" href="#rsvp-form" aria-label="RSVP on this website"></a><a class="hotspot return" href="#photo-booth" aria-label="Return to photo booth"></a></section><section class="rsvp-page" id="rsvp-form" hidden aria-labelledby="rsvp-title"><h2 class="rsvp-heading" id="rsvp-title">RSVP for Jagger's Baby Shower</h2><p class="rsvp-help">Please respond using the original RSVP form below.</p><iframe class="rsvp-iframe" src="https://f4jm9gtgyc-ui.github.io/homestead_hub/jagger_rsvp/" title="Jagger's baby shower RSVP form" loading="lazy" referrerpolicy="strict-origin-when-cross-origin"></iframe><div class="rsvp-actions"><a href="https://f4jm9gtgyc-ui.github.io/homestead_hub/jagger_rsvp/" target="_blank" rel="noopener noreferrer">Open RSVP form directly</a><a href="#invitation">Return to invitation</a></div></section></main><script>
+[hidden]{display:none!important}body{overflow-x:hidden}.rsvp-page{min-height:100dvh}.rsvp-page .rsvp-iframe{min-height:75dvh}
+/* Canva-inspired entrance on the invitation details page. */
+#invitation .art{transform-origin:center top}
+#invitation.page-enter .art{animation:invitation-reveal 1.2s cubic-bezier(.22,.68,.25,1) both}
+@keyframes invitation-reveal{
+  0%{opacity:0;transform:translateY(24px) scale(.985);filter:brightness(1.12)}
+  55%{opacity:.86}
+  100%{opacity:1;transform:translateY(0) scale(1);filter:brightness(1)}
+}
+@media(prefers-reduced-motion:reduce){#invitation.page-enter .art{animation:none}}
+
+/* Standalone envelope introduction */
+#intro{position:fixed;inset:0;z-index:1000;display:grid;place-items:center;overflow:auto;background:radial-gradient(circle at 50% 35%,#f5ece0 0%,#e9d9c8 70%);padding:24px 16px;color:#284a63;font-family:Georgia,serif;text-align:center}
+#intro[hidden]{display:none!important}
+.intro-content{width:min(100%,470px);display:flex;flex-direction:column;align-items:center;gap:14px}
+.intro-eyebrow{font-size:13px;letter-spacing:.25em;text-transform:uppercase;margin:0}
+.intro-heading{font-weight:normal;font-size:clamp(31px,8vw,44px);margin:0;font-style:italic}
+.intro-subtitle{font-size:15px;letter-spacing:.09em;margin:0 0 10px}
+.envelope-button{border:0;background:none;padding:0;width:min(86vw,390px);height:290px;position:relative;cursor:pointer;perspective:900px;filter:drop-shadow(0 18px 15px #806c593d)}
+.envelope{position:absolute;left:0;right:0;bottom:0;height:220px;transform-style:preserve-3d}
+.env-back{position:absolute;inset:0;background:#d7c2a7;border:1px solid #c1a684;border-radius:4px}
+.env-letter{position:absolute;left:11%;right:11%;bottom:15px;height:200px;background:#fff9ee;border:1px solid #d4c5aa;box-shadow:0 0 0 5px #f8f0e4 inset;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;transform:translateY(0);transition:transform 1.05s cubic-bezier(.2,.75,.25,1) .42s;z-index:2}
+.env-letter .mini-title{font-size:13px;letter-spacing:.18em}.env-letter .mini-name{font-size:27px;font-style:italic}.env-letter .mini-heart{font-size:21px;color:#284a63}
+.env-front{position:absolute;inset:0;z-index:3;background:linear-gradient(150deg,transparent 49.8%,#e8d6bd 50%) left bottom/50% 100% no-repeat,linear-gradient(210deg,transparent 49.8%,#e8d6bd 50%) right bottom/50% 100% no-repeat,linear-gradient(0deg,#e2cdb1,#e2cdb1) bottom/100% 50% no-repeat;clip-path:polygon(0 0,50% 52%,100% 0,100% 100%,0 100%);border-radius:3px}
+.env-flap{position:absolute;top:0;left:0;width:100%;height:62%;z-index:4;transform-origin:top center;transform-style:preserve-3d;backface-visibility:hidden;clip-path:polygon(0 0,100% 0,50% 100%);background:#ccb08d;transition:transform .75s ease;}
+.env-seal{position:absolute;top:41%;left:50%;transform:translate(-50%,-50%);z-index:5;border:2px solid #e8d9bd;background:#284a63;color:#fff;border-radius:50%;width:50px;height:50px;display:grid;place-items:center;font-size:20px;box-shadow:0 2px 8px #0002;transition:opacity .2s}
+#intro.opening .env-flap{transform:rotateX(180deg);z-index:1}
+#intro.opening .env-seal{opacity:0}
+#intro.opening .env-letter{transform:translateY(-110px)}
+#intro.leaving{animation:intro-exit .8s ease forwards}
+@keyframes intro-exit{to{opacity:0;transform:scale(1.045)}}
+.intro-hint{font-size:13px;letter-spacing:.18em;text-transform:uppercase;margin:4px 0 0;animation:hint-pulse 1.8s ease-in-out infinite}
+@keyframes hint-pulse{50%{opacity:.5}}
+.intro-footer{font-size:13px;letter-spacing:.12em;opacity:.75;margin:0}
+@media(prefers-reduced-motion:reduce){.env-flap,.env-letter{transition-duration:.01ms}.intro-hint{animation:none}#intro.leaving{animation:none}}
+
+/* Match the approved navy invitation envelope and antique brass seal. */
+.envelope-button{filter:drop-shadow(0 20px 20px #192f4260)}
+.env-back{background:linear-gradient(145deg,#31546e,#142c42);border:1px solid #10273c}
+.env-front{background:linear-gradient(150deg,transparent 49.8%,#274860 50%) left bottom/50% 100% no-repeat,linear-gradient(210deg,transparent 49.8%,#203d55 50%) right bottom/50% 100% no-repeat,linear-gradient(0deg,#1a354c,#294960) bottom/100% 50% no-repeat;box-shadow:inset 0 -10px 25px #0b1c2b44}
+.env-flap{background:linear-gradient(150deg,#33546c,#19364e 75%);filter:drop-shadow(0 2px 2px #081b2b55)}
+.env-seal{background:radial-gradient(circle at 36% 26%,#e3c38b 0%,#b98b43 37%,#795522 73%,#493015 100%);border:5px ridge #c6a060;box-shadow:0 3px 8px #0006,inset 0 0 0 2px #6e4b1e,inset 0 0 0 5px #e0bd78;color:#513818;text-shadow:0 1px #edcb83;width:62px;height:62px;font-size:23px}
+.env-letter{background:linear-gradient(125deg,#fffaf0,#efe2cf);border:7px double #b98b4b;outline:2px solid #e4d1ad;outline-offset:-13px;box-shadow:0 0 0 4px #fff7e9 inset}
+.env-letter::before{content:'❧';position:absolute;top:12px;color:#64734b;font-size:26px}
+.env-letter .mini-title{margin-top:24px;color:#284a63}
+.env-letter .mini-name{color:#284a63}
+
+/* Invitation intro typography: Allison headline, Cormorant Garamond body. */
+@import url('https://fonts.googleapis.com/css2?family=Allison&family=Cormorant+Garamond:wght@400;500;600;700&display=swap');
+@font-face{font-family:'EyesomeScript';src:local('Eyesome Script'),local('EyesomeScript'),local('Eyesome Script Regular');font-style:normal;font-weight:400;font-display:swap}
+#intro,#intro button,#intro .env-letter{font-family:'Cormorant Garamond',Georgia,serif}
+#intro .intro-heading{font-family:'Allison','Brush Script MT','Segoe Script',cursive;font-style:normal;font-weight:400;font-size:clamp(44px,10vw,66px);letter-spacing:0;line-height:1.25}
+#intro .intro-eyebrow,#intro .intro-subtitle,#intro .intro-hint,#intro .intro-footer,#intro .mini-title,#intro .mini-name{font-family:'Cormorant Garamond',Georgia,serif}
+#intro .mini-name{font-style:normal}
+#intro .intro-title-art{display:block;width:min(92vw,477px);height:auto;margin:0 auto 14px;object-fit:contain}#intro .intro-content{max-width:100%;} </style></head><body><section id="intro" aria-label="Open your invitation"><div class="intro-content"><img class="intro-title-art" src="assets/envelope-title.png" alt="A Special Delivery. You’re Invited. To Celebrate Baby Jagger." width="477" height="174"><button id="open-envelope" class="envelope-button" type="button" aria-label="Open invitation envelope"><span class="envelope"><span class="env-back"></span><span class="env-letter"><span class="mini-title">AHOY, IT'S A BOY</span><span class="mini-name">Jagger Seymour</span><span class="mini-heart">♥</span></span><span class="env-front"></span><span class="env-flap"></span><span class="env-seal">♥</span></span></button><p class="intro-hint">Tap envelope to open</p><p class="intro-footer">BABY ON BOARD · 2026</p></div></section><main id="website" hidden><section class="page home" id="photo-booth" aria-label="Meet Jagger's Crew"><img class="photo-strip" src="assets/photo-strip.webp" alt="Family photo strip featuring an ultrasound, Oakley and childhood photos"><img class="foreground" src="assets/homepage-overlay.png" alt="Meet Jagger's Crew nautical invitation with a brass porthole and olive branches"><a class="hotspot invite" href="#invitation" aria-label="Open Jagger's invitation"></a></section><section class="page" id="invitation" hidden aria-label="Jagger's baby shower invitation"><img class="art" src="assets/invitation-details.png" alt="Jagger Seymour baby shower, Saturday November 14 at 3:30 PM. RSVP by October 31. Books for Baby, location, raffle and registry." loading="lazy"><a class="hotspot location" href="https://www.google.com/maps/search/?api=1&amp;query=13052+Homestead+Ln+Parrish+FL" target="_blank" rel="noopener noreferrer" aria-label="Get directions"></a><a class="hotspot registry" href="https://my.babylist.com/baby-seymour-registry" target="_blank" rel="noopener noreferrer" aria-label="Open baby registry"></a><a class="hotspot rsvp" href="#rsvp-form" aria-label="RSVP on this website"></a><a class="hotspot return" href="#photo-booth" aria-label="Return to photo booth"></a></section><section class="rsvp-page" id="rsvp-form" hidden aria-labelledby="rsvp-title"><h2 class="rsvp-heading" id="rsvp-title">RSVP for Jagger's Baby Shower</h2><iframe class="rsvp-iframe" src="https://f4jm9gtgyc-ui.github.io/homestead_hub/jagger_rsvp/" title="Jagger's baby shower RSVP form" loading="lazy" referrerpolicy="strict-origin-when-cross-origin"></iframe></section></main><script>
 (function(){
+ const intro=document.getElementById('intro');
+ const website=document.getElementById('website');
+ const openButton=document.getElementById('open-envelope');
+ let opened=false;
+ function revealWebsite(){opened=true;website.hidden=false;intro.hidden=true;show('photo-booth',true);}
+ openButton.addEventListener('click',()=>{
+   if(opened||intro.classList.contains('opening'))return;
+   intro.classList.add('opening');
+   setTimeout(()=>intro.classList.add('leaving'),1250);
+   setTimeout(revealWebsite,2020);
+ });
+
+ const rsvpFrame=document.querySelector('.rsvp-iframe');
+ function adaptEmbeddedRSVP(){
+   try{
+     const doc=rsvpFrame.contentDocument;
+     if(!doc || !doc.body)return;
+     const fixReturnLinks=()=>{
+       doc.querySelectorAll('a.return-link').forEach(link=>{
+         link.href='https://f4jm9gtgyc-ui.github.io/homestead_hub/jaggers_baby_shower/#invitation';
+         link.target='_top';
+         link.rel='noopener';
+       });
+     };
+     fixReturnLinks();
+     if(!rsvpFrame._linkObserver && typeof MutationObserver!=='undefined'){
+       rsvpFrame._linkObserver=new MutationObserver(fixReturnLinks);
+       rsvpFrame._linkObserver.observe(doc.body,{subtree:true,childList:true});
+     }
+     const adjust=()=>{
+       const height=Math.ceil(Math.max(doc.documentElement.scrollHeight,doc.body.scrollHeight));
+       if(height>200)rsvpFrame.style.height=(height+8)+'px';
+     };
+     adjust();
+     if(!rsvpFrame._resizeObserver && typeof ResizeObserver!=='undefined'){
+       rsvpFrame._resizeObserver=new ResizeObserver(adjust);
+       rsvpFrame._resizeObserver.observe(doc.querySelector('.card')||doc.body);
+     }
+   }catch(err){/* Standalone file previews are cross-origin; published GitHub Pages is same-origin. */}
+ }
+ rsvpFrame.addEventListener('load',adaptEmbeddedRSVP);
  const ids=['photo-booth','invitation','rsvp-form'];
  const pages=ids.map(id=>document.getElementById(id));
  function show(id,updateHistory){
    if(!ids.includes(id))id='photo-booth';
    pages.forEach(page=>{page.hidden=page.id!==id;});
+    const invitation=document.getElementById('invitation');
+    invitation.classList.remove('page-enter');
+    if(id==='invitation'){void invitation.offsetWidth;invitation.classList.add('page-enter');}
    document.body.dataset.page=id;
    if(updateHistory)history.pushState({page:id},'', '#'+id);
    window.scrollTo(0,0);
@@ -29,6 +127,11 @@
  });
  window.addEventListener('popstate',()=>show(decodeURIComponent(location.hash.slice(1)),false));
  window.addEventListener('hashchange',()=>show(decodeURIComponent(location.hash.slice(1)),false));
- show(decodeURIComponent(location.hash.slice(1)),false);
+ if(['photo-booth','invitation','rsvp-form'].includes(decodeURIComponent(location.hash.slice(1)))){
+   opened=true;intro.hidden=true;website.hidden=false;
+   show(decodeURIComponent(location.hash.slice(1)),false);
+ }else{
+   pages.forEach(page=>{page.hidden=page.id!=='photo-booth';});
+ }
 })();
 </script></body></html>
