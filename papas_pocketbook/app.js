@@ -4,6 +4,7 @@ const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
 
 let currentUser = null;
 let editingTransactionId = null;
+let editingRecurringId = null;
 let state = { openingBalance: 0, balanceDate: new Date().toISOString().slice(0,10), transactions: [], recurring: [], obligations: [] };
 const $ = s => document.querySelector(s);
 const money = n => new Intl.NumberFormat('en-US',{style:'currency',currency:'USD'}).format(Number(n)||0);
@@ -75,7 +76,7 @@ function renderSummary(){
 }
 function renderRecurring(){
   const el=$('#recurringList'); if(!state.recurring.length){el.innerHTML='<div class="empty-state">No recurring activity yet.</div>';return;}
-  el.innerHTML=state.recurring.map(r=>`<div class="recurring-item"><div><strong>${escapeHtml(r.description)}</strong><small>${escapeHtml(r.frequency)} · next ${shortDate(r.nextDate)} · ${escapeHtml(r.category)}</small></div><div class="item-actions"><strong class="${r.type==='credit'?'positive':'negative'}">${signedMoney(r.amount,r.type)}</strong><button class="delete-btn" data-delete-rec="${r.id}" type="button">Delete</button></div></div>`).join('');
+  el.innerHTML=state.recurring.map(r=>`<div class="recurring-item"><div><strong>${escapeHtml(r.description)}</strong><small>${escapeHtml(r.frequency)} · next ${shortDate(r.nextDate)} · ${escapeHtml(r.category)}</small></div><div class="item-actions"><strong class="${r.type==='credit'?'positive':'negative'}">${signedMoney(r.amount,r.type)}</strong><button class="small-btn" data-edit-rec="${r.id}" type="button">Edit</button><button class="delete-btn" data-delete-rec="${r.id}" type="button">Delete</button></div></div>`).join('');
 }
 function renderObligations(){
   const el=$('#obligationsList'); if(!state.obligations.length){el.innerHTML='<div class="empty-state">No large obligations yet.</div>';return;}
@@ -97,8 +98,24 @@ $('#transactionForm').addEventListener('submit',async e=>{
   e.preventDefault();setSync('Saving…');const payload={user_id:currentUser.id,transaction_date:$('#txDate').value,description:$('#txDescription').value.trim(),category:$('#txCategory').value.trim(),transaction_type:$('#txType').value,amount:Number($('#txAmount').value),notes:$('#txNotes').value.trim(),updated_at:new Date().toISOString()};
   try{ if(editingTransactionId) assertOk(await sb.from('papa_transactions').update(payload).eq('id',editingTransactionId).eq('user_id',currentUser.id),'Update failed'); else assertOk(await sb.from('papa_transactions').insert(payload),'Insert failed'); closeDialog('transactionDialog');await loadData(); }catch(err){console.error(err);setSync('Save failed',true);alert(err.message);}
 });
-$('#addRecurringBtn').addEventListener('click',()=>{$('#recurringForm').reset();$('#recNextDate').value=todayISO();openDialog('recurringDialog');});
-$('#recurringForm').addEventListener('submit',async e=>{e.preventDefault();const payload={user_id:currentUser.id,description:$('#recDescription').value.trim(),category:$('#recCategory').value.trim(),transaction_type:$('#recType').value,amount:Number($('#recAmount').value),frequency:$('#recFrequency').value,next_date:$('#recNextDate').value,active:true,updated_at:new Date().toISOString()};try{assertOk(await sb.from('papa_recurring').insert(payload),'Recurring item failed');closeDialog('recurringDialog');await loadData();}catch(err){alert(err.message);}});
+$('#addRecurringBtn').addEventListener('click',()=>{editingRecurringId=null;$('#recurringDialog h3').textContent='Add Recurring Activity';$('#recurringForm').reset();$('#recNextDate').value=todayISO();openDialog('recurringDialog');});
+$('#recurringForm').addEventListener('submit',async e=>{
+  e.preventDefault();
+  const btn=e.submitter||$('#recurringForm button[type="submit"]');
+  if(btn.disabled)return;
+  btn.disabled=true;setSync('Saving…');
+  const payload={description:$('#recDescription').value.trim(),category:$('#recCategory').value.trim(),transaction_type:$('#recType').value,amount:Number($('#recAmount').value),frequency:$('#recFrequency').value,next_date:$('#recNextDate').value,updated_at:new Date().toISOString()};
+  try{
+    if(editingRecurringId){
+      const result=assertOk(await sb.from('papa_recurring').update(payload).eq('id',editingRecurringId).eq('user_id',currentUser.id).select('id').single(),'Recurring update failed');
+      if(!result.data)throw new Error('Recurring item was not updated. Please refresh and try again.');
+    }else{
+      assertOk(await sb.from('papa_recurring').insert({...payload,user_id:currentUser.id,active:true}),'Recurring item failed');
+    }
+    editingRecurringId=null;closeDialog('recurringDialog');await loadData();
+  }catch(err){setSync('Save failed',true);alert(err.message);}
+  finally{btn.disabled=false;}
+});
 $('#addObligationBtn').addEventListener('click',()=>{$('#obligationForm').reset();$('#oblReserved').value=0;openDialog('obligationDialog');});
 $('#obligationForm').addEventListener('submit',async e=>{e.preventDefault();const payload={user_id:currentUser.id,name:$('#oblName').value.trim(),due_date:$('#oblDueDate').value,target_amount:Number($('#oblTarget').value),reserved_amount:Number($('#oblReserved').value),frequency:$('#oblFrequency').value,updated_at:new Date().toISOString()};try{assertOk(await sb.from('papa_obligations').insert(payload),'Obligation failed');closeDialog('obligationDialog');await loadData();}catch(err){alert(err.message);}});
 
@@ -106,6 +123,14 @@ document.querySelectorAll('[data-close]').forEach(b=>b.addEventListener('click',
 $('#searchInput').addEventListener('input',renderLedger);$('#categoryFilter').addEventListener('change',renderLedger);
 document.body.addEventListener('click',async e=>{
   const edit=e.target.dataset.editTx;if(edit){const t=state.transactions.find(x=>x.id===edit);if(!t)return;editingTransactionId=t.id;$('#transactionDialogTitle').textContent='Edit Transaction';$('#txDate').value=t.date;$('#txDescription').value=t.description;$('#txCategory').value=t.category;$('#txType').value=t.type;$('#txAmount').value=t.amount;$('#txNotes').value=t.notes||'';openDialog('transactionDialog');return;}
+  const editRec=e.target.dataset.editRec;
+  if(editRec){
+    const r=state.recurring.find(x=>x.id===editRec);if(!r)return;
+    editingRecurringId=r.id;$('#recurringDialog h3').textContent='Edit Recurring Activity';
+    $('#recDescription').value=r.description;$('#recCategory').value=r.category;$('#recType').value=r.type;
+    $('#recAmount').value=r.amount;$('#recFrequency').value=r.frequency;$('#recNextDate').value=r.nextDate;
+    openDialog('recurringDialog');return;
+  }
   const specs=[['deleteTx','papa_transactions','transaction'],['deleteRec','papa_recurring','recurring item'],['deleteObl','papa_obligations','obligation']];
   for(const [key,table,label] of specs){const id=e.target.dataset[key];if(id&&confirm(`Delete this ${label}?`)){try{assertOk(await sb.from(table).delete().eq('id',id).eq('user_id',currentUser.id),'Delete failed');await loadData();}catch(err){alert(err.message);}return;}}
 });
