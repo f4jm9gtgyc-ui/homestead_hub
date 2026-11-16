@@ -1,0 +1,226 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#f8f4eb">
+<title>Christmas Lists · Homestead Hub</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#f8f4eb;color:#25392e;font:16px/1.45 system-ui,sans-serif}
+main{max-width:1050px;margin:auto;padding:26px 20px 54px}
+a{color:#285541}
+header{margin:20px 0 26px;background:#233e32;color:#fffaf1;border-radius:24px;padding:clamp(25px,6vw,55px)}
+h1,h2{font-family:Georgia,serif;font-weight:normal;margin:0}
+h1{font-size:clamp(2.7rem,7vw,4.7rem);line-height:1}
+header p{margin:12px 0 0;color:#f7e0b8}
+.totals{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin:0 0 22px}
+.totals div,.panel{background:#fffdf9;border:1px solid #ded8cb;border-radius:16px;padding:16px}
+.totals dt{color:#526258}.totals dd{font-size:1.5rem;font-weight:650;margin:0}
+.panel{margin-bottom:24px;padding:clamp(16px,4vw,25px)}
+.fields,.filters{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin:12px 0}
+label{display:block;font-weight:600;font-size:.9rem}
+input,select,textarea,button{font:inherit;border-radius:8px;min-height:44px}
+input,select,textarea{width:100%;background:#fff;padding:8px;border:1px solid #aaa99f;color:inherit;margin-top:4px}
+textarea{resize:vertical}
+button{border:1px solid #315842;padding:7px 14px;background:#315842;color:white;cursor:pointer}
+button.secondary{background:#fffdf9;color:#315842}
+button.danger{color:#8a383c;border-color:#8a383c}
+.actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+:focus-visible{outline:3px solid #9a552e;outline-offset:2px}
+#feedback{color:#8a383c;margin:8px 0}
+#feedback:empty{display:none}
+.group{margin:22px 0}
+.gift{background:#fffdf9;border:1px solid #ded8cb;border-radius:12px;padding:14px;margin-top:9px;overflow-wrap:anywhere}
+.gift h3,.gift p{margin:0 0 5px}.gift h3{font-size:1.05rem}.meta{color:#526258}
+small{color:#526258}
+</style>
+<main>
+<a href="../">← Homestead Hub</a>
+<header><h1>Christmas Lists</h1><p>Gift ideas and shopping by recipient</p></header>
+<dl class="totals">
+<div><dt>Gifts</dt><dd id="gift-count">0</dd></div>
+<div><dt>Bought</dt><dd id="bought-count">0</dd></div>
+<div><dt>Still planned</dt><dd id="planned-total">$0.00</dd></div>
+<div><dt>Spent</dt><dd id="spent-total">$0.00</dd></div>
+</dl>
+<section class="panel" aria-labelledby="form-title">
+<h2 id="form-title">Add a gift</h2>
+<form id="gift-form">
+<div class="fields">
+<label>Recipient <input name="recipient" list="recipient-options" required maxlength="80"></label>
+<datalist id="recipient-options"></datalist>
+<label>Gift <input name="gift" required maxlength="160"></label>
+<label>Price ($) <input type="number" name="price" min="0" max="1000000" step=".01" placeholder="Optional"></label>
+<label>Status <select name="status"><option>Idea</option><option>To buy</option><option>Purchased</option><option>Wrapped</option></select></label>
+</div>
+<div class="fields">
+<label>Product link <input name="url" type="url" maxlength="2000" placeholder="https://"></label>
+<label>Notes <textarea name="notes" rows="1" maxlength="600"></textarea></label>
+</div>
+<div class="actions"><button id="submit-gift">Add gift</button><button type="button" id="cancel-edit" class="secondary" hidden>Cancel edit</button></div>
+</form>
+<p id="feedback" role="alert"></p>
+<small>Lists are saved in this browser.</small>
+</section>
+<section aria-labelledby="list-title">
+<h2 id="list-title">Gift lists</h2>
+<div class="filters">
+<label>Recipient <select id="filter-recipient"></select></label>
+<label>Status <select id="filter-status"><option value="">All statuses</option><option>Idea</option><option>To buy</option><option>Purchased</option><option>Wrapped</option></select></label>
+</div>
+<div id="lists"></div>
+</section>
+</main>
+<script>
+const storageKey = 'homestead.christmas.gifts.v1'
+const byId = id => document.getElementById(id)
+const form = byId('gift-form')
+const feedback = byId('feedback')
+const recipientFilter = byId('filter-recipient')
+const statusFilter = byId('filter-status')
+const money = new Intl.NumberFormat('en-US', {style:'currency', currency:'USD'})
+let gifts = []
+let editing = null
+let readable = true
+try {
+  const stored = JSON.parse(localStorage.getItem(storageKey) || '[]')
+  if (!Array.isArray(stored)) throw new Error('Invalid gift list')
+  gifts = stored
+} catch {
+  readable = false
+  feedback.textContent = 'Saved gifts could not be loaded. Check this browser’s storage settings before making changes.'
+  byId('submit-gift').disabled = true
+}
+function save(next) {
+  if (!readable) return false
+  try {
+    localStorage.setItem(storageKey, JSON.stringify(next))
+  } catch {
+    feedback.textContent = 'Changes could not be saved. Check this browser’s storage settings and try again.'
+    return false
+  }
+  gifts = next
+  feedback.textContent = ''
+  return true
+}
+function node(tag, text, className) {
+  const el = document.createElement(tag)
+  el.textContent = text
+  if (className) el.className = className
+  return el
+}
+function button(label, action, className='secondary') {
+  const el = node('button', label, className)
+  el.addEventListener('click', action)
+  return el
+}
+function bought(gift) {
+  return gift.status === 'Purchased' || gift.status === 'Wrapped'
+}
+function sum(items) {
+  return money.format(items.reduce((total, item) => total + (item.cents ?? 0), 0) / 100)
+}
+function render() {
+  const names = [...new Set(gifts.map(item => item.recipient))].sort((a,b) => a.localeCompare(b))
+  const selected = recipientFilter.value
+  recipientFilter.replaceChildren(new Option('All recipients', ''), ...names.map(name => new Option(name,name)))
+  recipientFilter.value = names.includes(selected) ? selected : ''
+  byId('recipient-options').replaceChildren(...names.map(name => new Option(name,name)))
+  const purchases = gifts.filter(bought)
+  byId('gift-count').textContent = gifts.length
+  byId('bought-count').textContent = purchases.length
+  byId('spent-total').textContent = sum(purchases)
+  byId('planned-total').textContent = sum(gifts.filter(item => !bought(item)))
+  const visible = gifts.filter(item =>
+    (!recipientFilter.value || item.recipient === recipientFilter.value) &&
+    (!statusFilter.value || item.status === statusFilter.value))
+  const lists = byId('lists')
+  lists.replaceChildren()
+  if (!visible.length) {
+    lists.append(node('p', gifts.length ? 'No gifts match these filters.' : 'Add your first gift idea to get started.'))
+    return
+  }
+  for (const name of names) {
+    const items = visible.filter(item => item.recipient === name)
+    if (!items.length) continue
+    const group = node('section', '', 'group')
+    group.append(node('h2', name), node('small', sum(items.filter(bought)) + ' spent on gifts shown'))
+    for (const item of items) {
+      const card = node('article', '', 'gift')
+      card.append(node('h3', item.gift), node('p', item.status + (item.cents === null ? '' : ' · ' + money.format(item.cents / 100)), 'meta'))
+      if (item.notes) card.append(node('p', item.notes))
+      if (item.url) {
+        const link = node('a', 'View product')
+        link.href = item.url
+        link.target = '_blank'
+        link.rel = 'noopener noreferrer'
+        card.append(link)
+      }
+      const actions = node('div', '', 'actions')
+      actions.append(button('Edit', () => edit(item)))
+      if (!bought(item)) actions.append(button('Mark purchased', () => {
+        if (save(gifts.map(row => row.id === item.id ? {...row, status:'Purchased'} : row))) {
+          if (editing === item.id) form.elements.status.value = 'Purchased'
+          render()
+        }
+      }))
+      actions.append(button('Delete', () => {
+        if (!confirm('Delete this gift?')) return
+        if (save(gifts.filter(row => row.id !== item.id))) {
+          if (editing === item.id) resetForm()
+          render()
+        }
+      }, 'secondary danger'))
+      card.append(actions)
+      group.append(card)
+    }
+    lists.append(group)
+  }
+}
+function edit(item) {
+  editing = item.id
+  for (const field of ['recipient','gift','status','url','notes']) form.elements[field].value = item[field]
+  form.elements.price.value = item.cents === null ? '' : (item.cents / 100).toFixed(2)
+  byId('form-title').textContent = 'Edit gift'
+  byId('submit-gift').textContent = 'Save gift'
+  byId('cancel-edit').hidden = false
+  form.elements.gift.focus()
+}
+function resetForm() {
+  editing = null
+  form.reset()
+  byId('form-title').textContent = 'Add a gift'
+  byId('submit-gift').textContent = 'Add gift'
+  byId('cancel-edit').hidden = true
+}
+form.addEventListener('submit', event => {
+  event.preventDefault()
+  const fields = new FormData(form)
+  const recipient = fields.get('recipient').trim()
+  const gift = fields.get('gift').trim()
+  const url = fields.get('url').trim()
+  if (!recipient || !gift || (url && !/^https?:[/][/]/i.test(url))) {
+    feedback.textContent = 'Enter a recipient and gift name. Product links must start with https:// or http://.'
+    return
+  }
+  const price = fields.get('price')
+  const item = {
+    id: editing ?? crypto.randomUUID(),
+    recipient: gifts.find(row => row.recipient.toLowerCase() === recipient.toLowerCase())?.recipient ?? recipient,
+    gift, url, cents: price === '' ? null : Math.round(Number(price) * 100),
+    status: fields.get('status'), notes: fields.get('notes').trim()
+  }
+  const next = editing ? gifts.map(row => row.id === editing ? item : row) : [...gifts, item]
+  if (save(next)) {
+    resetForm()
+    recipientFilter.value = ''
+    statusFilter.value = ''
+    render()
+  }
+})
+byId('cancel-edit').addEventListener('click', resetForm)
+recipientFilter.addEventListener('change', render)
+statusFilter.addEventListener('change', render)
+render()
+</script>
+</html>
