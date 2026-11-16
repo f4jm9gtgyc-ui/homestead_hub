@@ -27,8 +27,12 @@ button.secondary{background:#fffdf9;color:#315842}
 button.danger{color:#8a383c;border-color:#8a383c}
 .actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
 :focus-visible{outline:3px solid #9a552e;outline-offset:2px}
-#feedback{color:#8a383c;margin:8px 0}
-#feedback:empty{display:none}
+#feedback,#budget-feedback{color:#8a383c;margin:8px 0}
+#feedback:empty,#budget-feedback:empty{display:none}
+.budget-form{display:flex;align-items:end;gap:10px;flex-wrap:wrap;margin:12px 0}
+.budget-form label{flex:0 1 220px}
+.budget-totals{margin:14px 0 8px}
+.budget-totals .over{color:#8a383c}
 .group{margin:22px 0}
 .gift{background:#fffdf9;border:1px solid #ded8cb;border-radius:12px;padding:14px;margin-top:9px;overflow-wrap:anywhere}
 .gift h3,.gift p{margin:0 0 5px}.gift h3{font-size:1.05rem}.meta{color:#526258}
@@ -43,6 +47,20 @@ small{color:#526258}
 <div><dt>Still planned</dt><dd id="planned-total">$0.00</dd></div>
 <div><dt>Spent</dt><dd id="spent-total">$0.00</dd></div>
 </dl>
+<section class="panel" aria-labelledby="budget-title">
+<h2 id="budget-title">Christmas budget</h2>
+<form id="budget-form" class="budget-form">
+<label>Total budget ($) <input id="budget-amount" type="number" min="0" max="1000000" step=".01" required placeholder="Enter an amount"></label>
+<button type="submit" id="save-budget">Set budget</button>
+</form>
+<p id="budget-feedback" role="status"></p>
+<dl class="totals budget-totals" aria-live="polite">
+<div><dt>Total budget</dt><dd id="budget-total">—</dd></div>
+<div><dt>Left after purchases</dt><dd id="budget-remaining">—</dd></div>
+<div><dt>Left after planned gifts</dt><dd id="budget-projected">—</dd></div>
+</dl>
+<small id="budget-note">Add prices to include gifts in your budget totals.</small>
+</section>
 <section class="panel" aria-labelledby="form-title">
 <h2 id="form-title">Add a gift</h2>
 <form id="gift-form">
@@ -73,6 +91,7 @@ small{color:#526258}
 </main>
 <script>
 const storageKey = 'homestead.christmas.gifts.v1'
+const budgetKey = 'homestead.christmas.budget.v1'
 const byId = id => document.getElementById(id)
 const form = byId('gift-form')
 const feedback = byId('feedback')
@@ -91,6 +110,38 @@ try {
   feedback.textContent = 'Saved gifts could not be loaded. Check this browser’s storage settings before making changes.'
   byId('submit-gift').disabled = true
 }
+const budgetForm = byId('budget-form')
+const budgetAmount = byId('budget-amount')
+const budgetFeedback = byId('budget-feedback')
+let budgetCents = null
+try {
+  const savedBudget = localStorage.getItem(budgetKey)
+  if (savedBudget !== null) {
+    const cents = JSON.parse(savedBudget)
+    if (!Number.isSafeInteger(cents) || cents < 0 || cents > 100000000) throw new Error('Invalid budget')
+    budgetCents = cents
+    budgetAmount.value = (cents / 100).toFixed(2)
+    byId('save-budget').textContent = 'Update budget'
+  }
+} catch {
+  budgetFeedback.textContent = 'Your saved budget could not be loaded.'
+}
+budgetForm.addEventListener('submit', event => {
+  event.preventDefault()
+  if (!budgetForm.reportValidity()) return
+  const cents = Math.round(Number(budgetAmount.value) * 100)
+  try {
+    localStorage.setItem(budgetKey, JSON.stringify(cents))
+  } catch {
+    budgetFeedback.textContent = 'The budget could not be saved. Check your browser’s storage settings and try again.'
+    return
+  }
+  budgetCents = cents
+  budgetAmount.value = (cents / 100).toFixed(2)
+  byId('save-budget').textContent = 'Update budget'
+  budgetFeedback.textContent = 'Budget saved.'
+  render()
+})
 function save(next) {
   if (!readable) return false
   try {
@@ -117,8 +168,27 @@ function button(label, action, className='secondary') {
 function bought(gift) {
   return gift.status === 'Purchased' || gift.status === 'Wrapped'
 }
-function sum(items) {
-  return money.format(items.reduce((total, item) => total + (item.cents ?? 0), 0) / 100)
+function totalCents(items) {
+  return items.reduce((total, item) => total + (item.cents ?? 0), 0)
+}
+function renderBudget(spent, planned) {
+  byId('budget-total').textContent = budgetCents === null ? '—' : money.format(budgetCents / 100)
+  const balances = [
+    ['budget-remaining', spent],
+    ['budget-projected', spent + planned]
+  ]
+  for (const [id, cost] of balances) {
+    const element = byId(id)
+    const balance = budgetCents === null || !readable ? null : budgetCents - cost
+    element.textContent = balance === null ? '—' : balance < 0
+      ? money.format(-balance / 100) + ' over'
+      : money.format(balance / 100)
+    element.classList.toggle('over', balance !== null && balance < 0)
+  }
+  const unpriced = gifts.filter(item => item.cents === null).length
+  byId('budget-note').textContent = unpriced
+    ? `${unpriced} ${unpriced === 1 ? 'gift has' : 'gifts have'} no price and ${unpriced === 1 ? 'is' : 'are'} excluded from the budget totals.`
+    : 'Budget totals include all priced gifts across recipients.'
 }
 function render() {
   const names = [...new Set(gifts.map(item => item.recipient))].sort((a,b) => a.localeCompare(b))
@@ -129,8 +199,11 @@ function render() {
   const purchases = gifts.filter(bought)
   byId('gift-count').textContent = gifts.length
   byId('bought-count').textContent = purchases.length
-  byId('spent-total').textContent = sum(purchases)
-  byId('planned-total').textContent = sum(gifts.filter(item => !bought(item)))
+  const spent = totalCents(purchases)
+  const planned = totalCents(gifts.filter(item => !bought(item)))
+  byId('spent-total').textContent = money.format(spent / 100)
+  byId('planned-total').textContent = money.format(planned / 100)
+  renderBudget(spent, planned)
   const visible = gifts.filter(item =>
     (!recipientFilter.value || item.recipient === recipientFilter.value) &&
     (!statusFilter.value || item.status === statusFilter.value))
@@ -144,7 +217,7 @@ function render() {
     const items = visible.filter(item => item.recipient === name)
     if (!items.length) continue
     const group = node('section', '', 'group')
-    group.append(node('h2', name), node('small', sum(items.filter(bought)) + ' spent on gifts shown'))
+    group.append(node('h2', name), node('small', money.format(totalCents(items.filter(bought)) / 100) + ' spent on gifts shown'))
     for (const item of items) {
       const card = node('article', '', 'gift')
       card.append(node('h3', item.gift), node('p', item.status + (item.cents === null ? '' : ' · ' + money.format(item.cents / 100)), 'meta'))
